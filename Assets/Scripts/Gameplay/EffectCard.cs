@@ -16,30 +16,35 @@ public class EffectCard : Card
 		UmDiaBom,
 		UmDiaExcelente,
 		SaiuNoJornal,
+		EmprestimoBancarioPequeno,
+		EmprestimoBancarioMedio,
+		EmprestimoBancarioGrande,
 	}
 
 	public enum SpecialEffect
 	{
 		None,
+		Emprestimo,
 	}
 
 	public EffectType effectType;
 	public SpecialEffect specialEffect;
 	public int specialEffectValue;
 
-	private UILabel cardDescription;
-
 	protected override void Start ()
 	{
 		base.Start ();
 
-		cardDescription = transform.FindChild("Front").FindChild("Description").GetComponent<UILabel>();
-
 		cardDescription.text = GetDescription();
+
+		if(specialEffect == SpecialEffect.Emprestimo)
+			rewardMoneyLabel.text = specialEffectValue.ToString();
 	}
 
 	public void OnPlayed()
 	{
+		if(specialEffect == SpecialEffect.Emprestimo)
+			GameController.Money += specialEffectValue;
 
 	}
 
@@ -66,6 +71,10 @@ public class EffectCard : Card
 		else if(effectType == EffectType.MarketingDigitalFraco || effectType == EffectType.MarketingDigitalForte || 
 		        effectType == EffectType.MarketingTradicionalFraco || effectType == EffectType.SaiuNoJornal)
 			s = string.Format(description, fameReward, cooldown);
+
+		else if(effectType == EffectType.EmprestimoBancarioPequeno || effectType == EffectType.EmprestimoBancarioMedio ||
+		        effectType == EffectType.EmprestimoBancarioGrande)
+			s = string.Format(description, specialEffectValue, cooldown, Mathf.Abs(moneyReward));
 
 		return s;
 	}

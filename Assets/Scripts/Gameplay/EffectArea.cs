@@ -63,7 +63,7 @@ public class EffectArea : MonoBehaviour
 			else if(GameController.EffectCardsPlayedThisTurn >= GameController.MaxEffectCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CONSTRUCTION CARDS!
-				Debug.Log(string.Format("Played {0} / {1} effect cards. Can't play more cards", GameController.ConstructionCardsPlayedThisTurn, GameController.MaxConstructionCardsPerTurn));
+				Debug.Log(string.Format("Played {0} / {1} effect cards. Can't play more cards", GameController.EffectCardsPlayedThisTurn, GameController.MaxEffectCardsPerTurn));
 			}
 			else if(GameController.Fame < card.minFame)
 			{

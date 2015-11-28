@@ -25,7 +25,7 @@ public class GameController : MonoBehaviour
 	public int maxEffectsCardsPerTurn;
 	public int cardsToDrawPerWeek;
 	public int cardsToDrawPerMonth;
-	public int maxCardInHand;
+	public int maxCardsInHand;
 	public FameDecrease[] fameDecrease;
 
 	private static int currentFame;
@@ -39,13 +39,22 @@ public class GameController : MonoBehaviour
 	private static int constructionCardsPlayedThisTurn;
 	private static int effectCardsPlayedThisTurn;
 
-	private static float moneyMultiplier;
-	private static float fameMultiplier;
+	private static float bonusMoney;
+	private static float bonusFame;
 	private static int cozinhaUpkeepBonus;
-
+	#region conflict effects
+	private static ConflictCard.SpecialEffect activeConflictEffect;
+	public static float moneyMultiplier;
+	public static float fameMultiplier;
+	#endregion
 	private ConstructionArea[] constructionAreas;
 
 	#region get / set
+	public static ConstructionArea[] ConstructionAreas
+	{
+		get { return Instance.constructionAreas; }
+	}
+
 	public static int Money
 	{
 		get { return currentMoney; }
@@ -65,7 +74,7 @@ public class GameController : MonoBehaviour
 		
 		set
 		{
-			currentFame = value;
+			currentFame = Mathf.Min(value, 100);
 			
 			if(OnFameChanged != null)
 				OnFameChanged();
@@ -156,6 +165,11 @@ public class GameController : MonoBehaviour
 		}
 	}
 
+	public static bool IsGameOver
+	{
+		get { return Fame <= -5; }
+	}
+
 	public static int MaxFame
 	{
 		get { return Instance.maxFame; }
@@ -203,7 +217,12 @@ public class GameController : MonoBehaviour
 
 	public static int MaxCardsInHand
 	{
-		get { return Instance.maxCardInHand; }
+		get { return Instance.maxCardsInHand; }
+	}
+
+	public static ConflictCard.SpecialEffect ActiveConflictEffect
+	{
+		get { return activeConflictEffect; }
 	}
 
 	#endregion
@@ -227,9 +246,11 @@ public class GameController : MonoBehaviour
 	{
 		ConstructionArea.OnConstructed += UpdateParameters;
 		ConstructionArea.OnReady += UpdateParameters;
-		ConstructionArea.OnDestroyed += UpdateParameters;
+		ConstructionArea.OnDiscarded += UpdateParameters;
 
 		EffectArea.OnPlayed += NewEffect;
+
+		ConflictCard.OnActive += NewConflict;
 
 		constructionAreas = GameObject.FindObjectsOfType<ConstructionArea>();
 
@@ -238,9 +259,13 @@ public class GameController : MonoBehaviour
 
 		currentMonth = 1;
 		currentWeek = 1;
-		fameMultiplier = 1;
-		moneyMultiplier = 1;
+		bonusFame = 1;
+		bonusMoney = 1;
 		cozinhaUpkeepBonus = 0;
+
+		activeConflictEffect = ConflictCard.SpecialEffect.None;
+		moneyMultiplier = 1;
+		fameMultiplier = 1;
 	}
 
 	public void NextWeek()
@@ -262,36 +287,76 @@ public class GameController : MonoBehaviour
 		}
 
 		Fame -= FameDecrease;
+
+		VerifyEndGame();
+
+		if(Week == 1 && !IsGameOver)
+			ShowConflictCard();
+
 		Debug.Log(string.Format("Passed to Week {0}", Week));
 	}
 
 	public void NextMonth()
 	{
-		Month++;
 		Debug.Log(string.Format("Passed to Month {0}", Month));
 
 		Money += MoneyProfit;
 		Fame += FameProfit;
 
+		//reset all conflict effects
+		moneyMultiplier = 1;
+		fameMultiplier = 1;
+		
+		UpdateParameters();
+
 		DeckController.Instance.DrawCards(cardsToDrawPerMonth);
+
+		Month++;
+	}
+
+	private void VerifyEndGame()
+	{
+		if(Fame <= -5)
+			Debug.Log("Game Over");
+
+		if(Fame >= 100)
+			Debug.Log("Winner, don't do drugs!!!");
+	}
+
+	private void ShowConflictCard()
+	{
+		DeckController.Instance.ShowConflictCard();
+		HUDController.Instance.ShowConflictCard();
+	}
+
+	private void NewConflict(ConflictCard.SpecialEffect specialEffect)
+	{
+		activeConflictEffect = specialEffect;
+
+		UpdateParameters();
+	}
+
+	private void UpdateParameters()
+	{
+		UpdateParameters(null);
 	}
 
 	private void UpdateParameters(Card c)
 	{
 		#region update construction bonus
-		fameMultiplier = 1;
-		moneyMultiplier = 1;
+		bonusFame = 1;
+		bonusMoney = 1;
 		cozinhaUpkeepBonus = 0;
 
 		foreach(ConstructionArea cArea in constructionAreas)
 		{
-			if(cArea.constructionCard != null && cArea.constructionCard.IsReady)
+			if(cArea.constructionCard != null && cArea.IsActive && cArea.constructionCard.IsReady)
 			{
 				if(cArea.constructionCard.specialEffect == ConstructionCard.SpecialEffect.Lucro)
-					moneyMultiplier += cArea.constructionCard.specialEffectValue;
+					bonusMoney += cArea.constructionCard.specialEffectValue;
 
 				if(cArea.constructionCard.specialEffect == ConstructionCard.SpecialEffect.Fama)
-					fameMultiplier += cArea.constructionCard.specialEffectValue;
+					bonusFame += cArea.constructionCard.specialEffectValue;
 
 				if(cArea.constructionCard.specialEffect == ConstructionCard.SpecialEffect.ManutencaoCozinha)
 					cozinhaUpkeepBonus += (int)cArea.constructionCard.specialEffectValue;
@@ -304,22 +369,22 @@ public class GameController : MonoBehaviour
 		int moneyProfit = 0;
 		foreach(ConstructionArea cArea in constructionAreas)
 		{
-			if(cArea.constructionCard != null && cArea.constructionCard.IsReady)
+			if(cArea.constructionCard != null && cArea.IsActive && cArea.constructionCard.IsReady)
 				moneyProfit += cArea.constructionCard.moneyReward;
 		}
 
-		MoneyProfit = Mathf.FloorToInt(moneyProfit * moneyMultiplier);
+		MoneyProfit = Mathf.FloorToInt(moneyProfit * bonusMoney * moneyMultiplier);
 		#endregion
 
 		#region update monthly fame reward
 		int fameProfit = 0;
 		foreach(ConstructionArea cArea in constructionAreas)
 		{
-			if(cArea.constructionCard != null && cArea.constructionCard.IsReady)
+			if(cArea.constructionCard != null && cArea.IsActive && cArea.constructionCard.IsReady)
 				fameProfit += cArea.constructionCard.fameReward;
 		}
 
-		FameProfit = Mathf.FloorToInt(fameProfit * fameMultiplier);
+		FameProfit = Mathf.FloorToInt(fameProfit * bonusFame * fameMultiplier);
 		#endregion
 
 		#region update upkeep
@@ -370,8 +435,8 @@ public class GameController : MonoBehaviour
 				              FameProfit,
 			              	  FameDecrease,
 				              Upkeep,
-			              	  ((fameMultiplier - 1) * 100f) + "%",
-			             	  ((moneyMultiplier - 1) * 100f) + "%",
+			              	  ((bonusFame - 1) * 100f) + "%",
+			              	  ((bonusMoney - 1) * 100f) + "%",
 			              	  cozinhaUpkeepBonus,
 				              Week,
 				              Month,

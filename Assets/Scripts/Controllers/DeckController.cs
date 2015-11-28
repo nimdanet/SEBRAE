@@ -27,14 +27,20 @@ public class DeckController : MonoBehaviour
 
 	public List<GameConstructionCard> constructionCards;
 	public List<GameEffectCard> effectCards;
+	public List<GameConflictCard> conflictCards;
 	private static List<GameCard> deck;
+	private static List<GameConflictCard> conflictDeck;
 	private static List<Card> cardsInHand;
 	public static List<GameCard> discardedPile;
+	public static List<GameConflictCard> discardedConflictPile;
 
 	[Header("For Developer")]
 	public Transform hand;
 	public GameObject constructionCardDefault;
 	public GameObject effectCardDefault;
+	public Transform conflictCardHolder;
+	public GameObject goodConflictDefault;
+	public GameObject badConflictDefault;
 
 	void Start()
 	{
@@ -50,6 +56,8 @@ public class DeckController : MonoBehaviour
 		discardedPile = new List<GameCard>();
 		deck = new List<GameCard>();
 		cardsInHand = new List<Card>();
+		conflictDeck = new List<GameConflictCard>();
+		discardedConflictPile = new List<GameConflictCard>();
 
 		foreach(GameConstructionCard cardParameters in constructionCards)
 		{
@@ -63,11 +71,21 @@ public class DeckController : MonoBehaviour
 				deck.Add(cardParameters);
 		}
 
-		Shuffle();
+		#region CONFLICT DECK
+		foreach(GameConflictCard cardParameters in conflictCards)
+		{
+			for(byte i = 0; i < cardParameters.qnty; i++)
+				conflictDeck.Add(cardParameters);
+		}
+		#endregion
+
+
+		ShuffleDeck();
+		ShuffleConflictDeck();
 		DrawCards(GameController.InitialCards);
 	}
 
-	public void Shuffle()
+	public void ShuffleDeck()
 	{
 		for (byte i = 0; i < deck.Count; i++) 
 		{
@@ -76,6 +94,20 @@ public class DeckController : MonoBehaviour
 			deck[i] = deck[randomIndex];
 			deck[randomIndex] = temp;
 		}
+	}
+
+	public void ShuffleConflictDeck()
+	{
+		for (byte i = 0; i < conflictDeck.Count; i++) 
+		{
+			GameConflictCard temp = conflictDeck[i];
+			int randomIndex = Random.Range(i, conflictDeck.Count);
+			conflictDeck[i] = conflictDeck[randomIndex];
+			conflictDeck[randomIndex] = temp;
+		}
+
+		foreach(GameConflictCard gcc in conflictDeck)
+			Debug.Log(gcc.ToString());
 	}
 
 	public void DrawCards(int cardsToDraw)
@@ -142,13 +174,56 @@ public class DeckController : MonoBehaviour
 		ArrangeHand();
 	}
 
+	public void ShowConflictCard()
+	{
+		if(conflictDeck.Count == 0)
+			RecicleConflictCards();
+
+		GameConflictCard gameCard = conflictDeck[0] as GameConflictCard;
+		
+		GameObject card = null;
+		
+		if(gameCard.type == ConflictCard.ConflictType.Good)
+			card = goodConflictDefault;
+		else if(gameCard.type == ConflictCard.ConflictType.Bad)
+			card = badConflictDefault;
+		
+		card = Instantiate(card) as GameObject;
+		ConflictCard cardComponent = card.GetComponent<ConflictCard>();
+		
+		cardComponent.nome = conflictDeck[0].nome;
+		cardComponent.description = conflictDeck[0].description;
+		cardComponent.image = conflictDeck[0].image;
+		cardComponent.conflictType = conflictDeck[0].type;
+		cardComponent.specialEffect = conflictDeck[0].specialEffect;
+		cardComponent.specialEffectValue = conflictDeck[0].specialEffectValue;
+
+		card.transform.parent = conflictCardHolder.transform;
+		card.transform.localScale = Vector3.one;
+
+		discardedConflictPile.Add(conflictDeck[0]);
+		conflictDeck.RemoveAt(0);
+	
+		Debug.Log("Conflict Cards Left: " + conflictDeck.Count);
+		Debug.Log("Next Conflict Card: " + conflictDeck[0].ToString());
+	}
+
 	private void RecicleCards()
 	{
 		Debug.Log("Out of cards. Recicling...");
 		deck = new List<GameCard>(discardedPile);
 		discardedPile.Clear();
 
-		Shuffle();
+		ShuffleDeck();
+	}
+
+	private void RecicleConflictCards()
+	{
+		Debug.Log("Out of conflict cards. Recicling...");
+		conflictDeck = new List<GameConflictCard>(discardedConflictPile);
+		discardedConflictPile.Clear();
+		
+		ShuffleConflictDeck();
 	}
 
 	private void NewConstruction(Card card)
@@ -179,7 +254,7 @@ public class DeckController : MonoBehaviour
 
 		BoxCollider collider = hand.GetComponent<BoxCollider>();
 		float initialPosition = -(collider.size.x / 2f);
-		float cellWidth = collider.size.x / (cardsInHand.Count - 1);
+		float cellWidth = collider.size.x / (Mathf.Max(cardsInHand.Count - 1, 1));
 
 		for(byte i = 0; i < cardsInHand.Count; i++)
 		{
@@ -189,6 +264,14 @@ public class DeckController : MonoBehaviour
 			cardsInHand[i].transform.localPosition = pos;
 			cardsInHand[i].GetComponent<UIPanel>().depth = 10 + i;
 		}
+	}
+
+	public void DiscardHand()
+	{
+		for(int i = cardsInHand.Count - 1; i >= 0; i--)
+			cardsInHand[i].Discard();
+
+		cardsInHand.Clear();
 	}
 }
 
@@ -226,4 +309,27 @@ public class GameEffectCard : GameCard
 	public int specialEffectValue;
 
 	public EffectCard.EffectType effectType;
+}
+
+[System.Serializable]
+public class GameConflictCard
+{
+	public string nome;
+	public int qnty;
+	public string description;
+	public Texture2D image;
+
+	public ConflictCard.ConflictType type;
+	public ConflictCard.SpecialEffect specialEffect;
+	public float specialEffectValue;
+
+	public override string ToString ()
+	{
+		return string.Format("Type: {0} \n" +
+		                     "Special Effect: {1} \n" +
+		                     "Special Effect Value: {2}",
+		                     type,
+		                     specialEffect,
+		                     specialEffectValue);
+	}
 }

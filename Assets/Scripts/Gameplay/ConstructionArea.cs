@@ -7,13 +7,14 @@ public class ConstructionArea : MonoBehaviour
 	#region Action
 	public static event Action<Card> OnConstructed;
 	public static event Action<Card> OnReady;
-	public static event Action<Card> OnDestroyed;
+	public static event Action<Card> OnDiscarded;
 	#endregion
 
 	public Color rightColor;
 	public Color wrongColor;
 	public Color hoverColor;
 	public Color normalColor = Color.white;
+	public Color inactiveColor = Color.gray;
 
 	public Sprite blankSprite;
 	public Sprite constructionSprite;
@@ -23,6 +24,15 @@ public class ConstructionArea : MonoBehaviour
 	private SpriteRenderer spriteArea;
 	private Transform hudCard;
 	private UILabel countdown;
+
+	private bool inactive;
+
+	#region get / set
+	public bool IsActive
+	{
+		get { return !inactive; }
+	}
+	#endregion
 
 	void Start()
 	{
@@ -36,6 +46,8 @@ public class ConstructionArea : MonoBehaviour
 		hudCard = GameObject.Find(gameObject.name.Replace("Area", "HUD")).transform;
 		countdown = hudCard.FindChild("Countdown").GetComponent<UILabel>();
 		countdown.enabled = false;
+
+		inactive = false;
 	}
 
 	public void OnCardFlipped()
@@ -111,16 +123,7 @@ public class ConstructionArea : MonoBehaviour
 				Debug.Log("Construct!");
 
 				if(constructionCard != null)
-				{
-					GameController.OnWeekChanged -= DecreaseCooldown;
-
-					constructionCard.Discard();
-
-					if(OnDestroyed != null)
-						OnDestroyed(constructionCard);
-
-					constructionCard = null;
-				}
+					Discard();
 
 				//added card to gameplay
 				constructionCard = card as ConstructionCard;
@@ -136,6 +139,8 @@ public class ConstructionArea : MonoBehaviour
 				countdown.enabled = true;
 				countdown.text = constructionCard.cooldown.ToString();
 
+				VerifyActiveConflict();
+
 				GameController.OnWeekChanged += DecreaseCooldown;
 
 				if(OnConstructed != null)
@@ -145,7 +150,24 @@ public class ConstructionArea : MonoBehaviour
 			}
 		}
 
-		spriteArea.color = normalColor;
+		spriteArea.color = (IsActive) ? normalColor : inactiveColor;
+	}
+
+	private void VerifyActiveConflict()
+	{
+		if((GameController.ActiveConflictEffect == ConflictCard.SpecialEffect.Cozinhas && 
+		    constructionCard.constructionType == ConstructionCard.ContructionType.Cozinha) ||
+		   (GameController.ActiveConflictEffect == ConflictCard.SpecialEffect.Saloes && 
+			constructionCard.constructionType == ConstructionCard.ContructionType.Salao) ||
+		   (GameController.ActiveConflictEffect == ConflictCard.SpecialEffect.DispensaLobby && 
+		 	(constructionCard.constructionType == ConstructionCard.ContructionType.Dispensa || 
+		 	constructionCard.constructionType == ConstructionCard.ContructionType.Lobby)) ||
+		   (GameController.ActiveConflictEffect == ConflictCard.SpecialEffect.AdministrativoBanheiro && 
+		 	(constructionCard.constructionType == ConstructionCard.ContructionType.Administrativo || 
+		 	constructionCard.constructionType == ConstructionCard.ContructionType.Banheiro)))
+		{
+			Inactivate();
+		}
 	}
 
 	private void DecreaseCooldown()
@@ -154,15 +176,73 @@ public class ConstructionArea : MonoBehaviour
 		countdown.text = constructionCard.cooldown.ToString();
 
 		if(constructionCard.cooldown == 0)
-		{
-			GameController.OnWeekChanged -= DecreaseCooldown;
-			countdown.enabled = false;
-			//TODO: uncomment this when all sprite areas were filled
-			//spriteArea.sprite = constructionCard.sprite;
+			ConstructionComplete();
+	}
 
-			if(OnReady != null)
-				OnReady(constructionCard);
-		}
+	private void ConstructionComplete()
+	{
+		GameController.OnWeekChanged -= DecreaseCooldown;
+		countdown.enabled = false;
+		//TODO: uncomment this when all sprite areas were filled
+		//spriteArea.sprite = constructionCard.sprite;
+		
+		if(OnReady != null)
+			OnReady(constructionCard);
+	}
+
+	public void Discard()
+	{
+		GameController.OnWeekChanged -= DecreaseCooldown;
+		
+		constructionCard.Discard();
+		
+		if(OnDiscarded != null)
+			OnDiscarded(constructionCard);
+		
+		constructionCard = null;
+
+		spriteArea.sprite = blankSprite;
+
+		//reactivate blank card
+		hudCard.FindChild("Card").FindChild("Blank").gameObject.SetActive(true);
+	}
+
+	public void ZeraCooldown()
+	{
+		Debug.Log(string.Format("Zera Cooldown da {0} {1}", constructionCard.constructionType, constructionCard.level));
+		constructionCard.cooldown = 0;
+
+		ConstructionComplete();
+	}
+
+	public void RestoreCooldown()
+	{
+		Debug.Log(string.Format("Volta Cooldown da {0} {1}", constructionCard.constructionType, constructionCard.level));
+		constructionCard.ResetCooldown();
+
+		spriteArea.sprite = constructionSprite;
+		countdown.enabled = true;
+		countdown.text = constructionCard.cooldown.ToString();
+
+		GameController.OnWeekChanged += DecreaseCooldown;
+	}
+
+	public void Inactivate()
+	{
+		Debug.Log("Inactivate!");
+
+		inactive = true;
+		spriteArea.color = inactiveColor;
+
+		GameController.OnMonthChanged += Reactivate;
+	}
+
+	private void Reactivate()
+	{
+		inactive = false;
+		spriteArea.color = normalColor;
+
+		GameController.OnMonthChanged -= Reactivate;
 	}
 
 	private void CardMoved(Card card)

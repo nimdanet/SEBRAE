@@ -13,6 +13,8 @@ public class HUDController : MonoBehaviour
 
 	public TweenRotation pointer;
 
+	public GameObject conflictDeck;
+
 	#region singleton
 	private static HUDController instance;
 	public static HUDController Instance
@@ -34,7 +36,11 @@ public class HUDController : MonoBehaviour
 		GameController.OnUpkeepChanged += UpkeepUpdated;
 		GameController.OnMoneyProfitChanged += MoneyProfitUpdated;
 		GameController.OnFameProfitChanged += FameProfitUpdated;
-		//GameController.OnWeekChanged += PassWeek;
+	}
+
+	void Start()
+	{
+		conflictDeck.SetActive(false);
 	}
 
 	private void FameUpdated()
@@ -77,6 +83,15 @@ public class HUDController : MonoBehaviour
 		pointer.to = new Vector3(0, 0, 90 - (90f * (GameController.Week - 0f)));
 
 		pointer.PlayForward();
+	}
 
+	public void ShowConflictCard()
+	{
+		conflictDeck.SetActive(true);
+	}
+
+	public void HideConflictCard()
+	{
+		conflictDeck.SetActive(false);
 	}
 }

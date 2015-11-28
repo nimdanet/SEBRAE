@@ -60,6 +60,10 @@ public class ConstructionCard : Card
 
 		cardLevel.text = "lvl " + level;
 		cooldownLabel.text = upkeep.ToString();
+
+		int parameter = (specialEffect == SpecialEffect.ManutencaoCozinha) ? (int)Mathf.Abs (specialEffectValue) : (int)(specialEffectValue * 100);
+		cardDescription.text = string.Format(description, parameter);
+
 	}
 
 	public override string ToString ()

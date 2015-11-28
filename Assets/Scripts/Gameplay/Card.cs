@@ -19,11 +19,13 @@ public class Card : MonoBehaviour
 	public int moneyReward;
 	public int fameReward;
 	public int cooldown;
+	private int fullCooldown;
 
 	[HideInInspector]
 	public GameCard originalCard;
 
 	protected UILabel cardName;
+	protected UILabel cardDescription;
 	protected UISprite cardImage;
 	protected UILabel rewardMoneyLabel;
 	protected UILabel rewardFameLabel;
@@ -44,6 +46,7 @@ public class Card : MonoBehaviour
 	protected virtual void Start()
 	{
 		cardName = transform.FindChild("Front").FindChild("Title").GetComponent<UILabel>();
+		cardDescription = transform.FindChild("Front").FindChild("Description").GetComponent<UILabel>();
 		cardImage = transform.FindChild("Front").FindChild("Image").GetComponent<UISprite>();
 
 		rewardMoneyLabel = transform.FindChild("Front").FindChild("Reward Money").FindChild("Label").GetComponent<UILabel>();
@@ -53,11 +56,24 @@ public class Card : MonoBehaviour
 		cooldownLabel = transform.FindChild("Front").FindChild("Cooldown").FindChild("Label").GetComponent<UILabel>();
 
 		cardName.text = nome;
+		cardDescription.text = description;
 		rewardMoneyLabel.text = moneyReward.ToString();
 		rewardFameLabel.text = fameReward.ToString();
 		costMoneyLabel.text = cost.ToString();
 		costFameLabel.text = minFame.ToString();
 		cooldownLabel.text = cooldown.ToString();
+
+		fullCooldown = cooldown;
+	}
+
+	public void ResetCooldown()
+	{
+		cooldown = fullCooldown;
+	}
+
+	public void ResetCooldown(int weeks)
+	{
+		cooldown = weeks;
 	}
 
 	public void Discard()
