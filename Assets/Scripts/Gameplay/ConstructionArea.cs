@@ -8,6 +8,8 @@ public class ConstructionArea : MonoBehaviour
 	public static event Action<Card> OnConstructed;
 	public static event Action<Card> OnReady;
 	public static event Action<Card> OnDiscarded;
+
+	public static event Action<ConstructionArea> OnAreaSelected;
 	#endregion
 
 	public Color rightColor;
@@ -19,6 +21,7 @@ public class ConstructionArea : MonoBehaviour
 	public Sprite blankSprite;
 	public Sprite constructionSprite;
 
+	[HideInInspector]
 	public ConstructionCard constructionCard;
 
 	private SpriteRenderer spriteArea;
@@ -40,8 +43,14 @@ public class ConstructionArea : MonoBehaviour
 		DragDropCard.OnDropped += CardDropped;
 		DragDropCard.OnDragMove += CardMoved;
 
+		EffectCard.OnWaitingForSelect += ShowClickableAreas;
+		ConstructionArea.OnAreaSelected += AreaSelected;
+
 		spriteArea = GetComponent<SpriteRenderer>();
 		spriteArea.sprite = blankSprite;
+		Color c = spriteArea.color;
+		c.a = 0;
+		spriteArea.color = c;
 
 		hudCard = GameObject.Find(gameObject.name.Replace("Area", "HUD")).transform;
 		countdown = hudCard.FindChild("Countdown").GetComponent<UILabel>();
@@ -70,7 +79,9 @@ public class ConstructionArea : MonoBehaviour
 			return;
 		}
 
-		if(constructionCard != null)
+		if(GameController.activeCardEffect == EffectCard.EffectType.DescartaCompraCartas)
+			spriteArea.color = wrongColor;
+		else if(constructionCard != null)
 		{
 			if(constructionCard.constructionType == cCard.constructionType)
 			{
@@ -112,7 +123,10 @@ public class ConstructionArea : MonoBehaviour
 				//TODO: feedback NO FAME!
 				Debug.Log(string.Format("Fame {0} Required Fame {1} No FAME", GameController.Fame, card.minFame));
 			}
-
+			else if(constructionCard != null && constructionCard.cooldown > 0)
+			{
+				Debug.Log (string.Format("Você já tem uma construção em andamento nesse lugar.", constructionCard.cooldown));
+			}
 			/*else if(GameController.Money < card.cost)
 			{
 				//TODO: feedback NO MONEY!
@@ -130,6 +144,9 @@ public class ConstructionArea : MonoBehaviour
 				card.transform.parent = hudCard.FindChild("Card");
 				card.transform.localPosition = Vector3.zero;
 				card.transform.localScale = Vector3.one;
+				card.GetComponent<Collider>().enabled = false;
+				card.transform.FindChild("Front").localPosition = Vector3.zero;
+				card.transform.FindChild("Back").localPosition = Vector3.zero;
 
 				//inactivate blank card
 				hudCard.FindChild("Card").FindChild("Blank").gameObject.SetActive(false);
@@ -151,6 +168,14 @@ public class ConstructionArea : MonoBehaviour
 		}
 
 		spriteArea.color = (IsActive) ? normalColor : inactiveColor;
+
+		if(spriteArea.sprite == blankSprite)
+		{
+			Color c = spriteArea.color;
+			c.a = 0;
+			spriteArea.color = c;
+		}
+
 	}
 
 	private void VerifyActiveConflict()
@@ -183,8 +208,8 @@ public class ConstructionArea : MonoBehaviour
 	{
 		GameController.OnWeekChanged -= DecreaseCooldown;
 		countdown.enabled = false;
-		//TODO: uncomment this when all sprite areas were filled
-		//spriteArea.sprite = constructionCard.sprite;
+
+		spriteArea.sprite = constructionCard.sprite;
 		
 		if(OnReady != null)
 			OnReady(constructionCard);
@@ -202,6 +227,10 @@ public class ConstructionArea : MonoBehaviour
 		constructionCard = null;
 
 		spriteArea.sprite = blankSprite;
+		Color c = spriteArea.color;
+		c.a = 0;
+		spriteArea.color = c;
+		countdown.enabled = false;
 
 		//reactivate blank card
 		hudCard.FindChild("Card").FindChild("Blank").gameObject.SetActive(true);
@@ -224,7 +253,17 @@ public class ConstructionArea : MonoBehaviour
 		countdown.enabled = true;
 		countdown.text = constructionCard.cooldown.ToString();
 
+		GameController.OnWeekChanged -= DecreaseCooldown;
 		GameController.OnWeekChanged += DecreaseCooldown;
+	}
+
+	public void DiminuiCooldown(int value)
+	{
+		while(value > 0)
+		{
+			DecreaseCooldown();
+			value--;
+		}
 	}
 
 	public void Inactivate()
@@ -250,17 +289,76 @@ public class ConstructionArea : MonoBehaviour
 
 	}
 
+	private void ShowClickableAreas()
+	{
+		Debug.Log(gameObject.name);
+		Debug.Log(constructionCard);
+		if(GameController.activeCardEffect == EffectCard.EffectType.DestroiConstrucao)
+		{
+			if(constructionCard != null)
+				spriteArea.color = rightColor;
+			else
+				spriteArea.color = wrongColor;
+		}
+		else if(GameController.activeCardEffect == EffectCard.EffectType.DiminuiCooldown)
+		{
+			if(constructionCard != null)
+			{
+				Debug.Log(constructionCard.cooldown);
+				if(constructionCard.cooldown > 0)
+					spriteArea.color = rightColor;
+				else
+					spriteArea.color = wrongColor;
+			}
+			else
+				spriteArea.color = wrongColor;
+		}
+	}
+
+	private void AreaSelected(ConstructionArea cArea)
+	{
+		if(constructionCard == null)
+			spriteArea.color = normalColor;
+		else
+			spriteArea.color = (IsActive) ? normalColor : inactiveColor;
+
+		if(spriteArea.sprite == blankSprite)
+		{
+			Color c = spriteArea.color;
+			c.a = 0;
+			spriteArea.color = c;
+		}
+	}
+
 	void OnMouseOver() 
 	{
 		if(DragDropCard.current != null && spriteArea.color != wrongColor)
 			spriteArea.color = hoverColor;
+
+		if(GameController.activeCardEffect == EffectCard.EffectType.DestroiConstrucao || GameController.activeCardEffect == EffectCard.EffectType.DiminuiCooldown)
+		{
+			if(spriteArea.color != wrongColor)
+				spriteArea.color = hoverColor;
+		}
 	}
 
 	void OnMouseExit() 
 	{
 		if(DragDropCard.current != null && spriteArea.color != wrongColor)
 			spriteArea.color = rightColor;
+
+		if(GameController.activeCardEffect == EffectCard.EffectType.DestroiConstrucao || GameController.activeCardEffect == EffectCard.EffectType.DiminuiCooldown)
+		{
+			if(spriteArea.color != wrongColor)
+				spriteArea.color = rightColor;
+		}
 	}
 
+	void OnMouseDown()
+	{
+		Debug.Log("Selected : " + gameObject.name);
 
+		if(OnAreaSelected != null)
+			OnAreaSelected(this);
+	}
 }

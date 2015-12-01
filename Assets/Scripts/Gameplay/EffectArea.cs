@@ -28,6 +28,9 @@ public class EffectArea : MonoBehaviour
 		DragDropCard.OnDropped += CardDropped;
 		DragDropCard.OnDragMove += CardMoved;
 
+		EffectCard.OnWaitingForSelect += ShowClickableAreas;
+		ConstructionArea.OnAreaSelected += AreaSelected;
+
 		spriteArea = transform.FindChild("Sprite").GetComponent<UI2DSprite>();
 		hudCard = transform;//GameObject.Find(gameObject.name.Replace("Area", "HUD")).transform;
 		countdown = hudCard.FindChild("Countdown").GetComponentInChildren<UILabel>();
@@ -47,7 +50,12 @@ public class EffectArea : MonoBehaviour
 		if(effectCard != null)
 			spriteArea.color = wrongColor;
 		else
-			spriteArea.color = rightColor;
+		{
+			if(GameController.activeCardEffect == EffectCard.EffectType.DescartaCompraCartas)
+				spriteArea.color = wrongColor;
+			else
+				spriteArea.color = rightColor;
+		}
 		
 	}
 	
@@ -76,6 +84,11 @@ public class EffectArea : MonoBehaviour
 				//TODO: feedback NO MONEY!
 				Debug.Log(string.Format("Money {0} Required Money {1} No MONEY", GameController.Money, card.cost));
 			}*/
+			else if(!((EffectCard)card).CanBePlayed())
+			{
+				//TODO: feecback cannot be played
+				Debug.Log(((EffectCard)card).ErrorMessage);
+			}
 			else
 			{
 				Debug.Log("New Effect!");
@@ -85,7 +98,10 @@ public class EffectArea : MonoBehaviour
 				card.transform.parent = hudCard.FindChild("Card");
 				card.transform.localPosition = Vector3.zero;
 				card.transform.localScale = Vector3.one;
-				
+				card.GetComponent<Collider>().enabled = false;
+				card.transform.FindChild("Front").localPosition = Vector3.zero;
+				card.transform.FindChild("Back").localPosition = Vector3.zero;
+
 				//change sprite and activate cooldown
 				countdown.enabled = true;
 				countdown.text = effectCard.cooldown.ToString();
@@ -118,6 +134,13 @@ public class EffectArea : MonoBehaviour
 
 	private void UnlockEffect()
 	{
+		StartCoroutine(UnlockEffectEndFrame());
+	}
+
+	private IEnumerator UnlockEffectEndFrame()
+	{
+		yield return new WaitForEndOfFrame();
+
 		GameController.OnWeekChanged -= DecreaseCooldown;
 		countdown.enabled = false;
 		
@@ -149,5 +172,15 @@ public class EffectArea : MonoBehaviour
 		{
 			spriteArea.color = rightColor;
 		}
+	}
+
+	private void ShowClickableAreas()
+	{
+		spriteArea.color = wrongColor;
+	}
+
+	private void AreaSelected(ConstructionArea cArea)
+	{
+		spriteArea.color = normalColor;
 	}
 }

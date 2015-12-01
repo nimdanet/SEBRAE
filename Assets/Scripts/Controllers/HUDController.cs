@@ -77,6 +77,9 @@ public class HUDController : MonoBehaviour
 			return;
 		}
 
+		if(GameController.activeCardEffect != EffectCard.EffectType.None)
+			return;
+
 		pointer.ResetToBeginning();
 
 		pointer.from = new Vector3(0, 0, 90 - (90f * (GameController.Week - 1f)));

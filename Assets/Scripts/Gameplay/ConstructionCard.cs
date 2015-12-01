@@ -28,8 +28,7 @@ public class ConstructionCard : Card
 
 	public SpecialEffect specialEffect;
 	public float specialEffectValue;
-
-	private UILabel cardLevel;
+	
 	protected UILabel upkeepLabel;
 
 	#region get / set
@@ -55,10 +54,13 @@ public class ConstructionCard : Card
 
 		cardType = Card.Type.Construction;
 
-		cardLevel = transform.FindChild("Front").FindChild("Level").GetComponent<UILabel>();
 		cooldownLabel = transform.FindChild("Front").FindChild("Upkeep").FindChild("Label").GetComponent<UILabel>();
 
-		cardLevel.text = "lvl " + level;
+		cardName.text += " ";
+
+		for(int i = 0; i < level; i++)
+			cardName.text += "I";
+
 		cooldownLabel.text = upkeep.ToString();
 
 		int parameter = (specialEffect == SpecialEffect.ManutencaoCozinha) ? (int)Mathf.Abs (specialEffectValue) : (int)(specialEffectValue * 100);

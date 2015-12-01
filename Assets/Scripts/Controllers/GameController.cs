@@ -47,6 +47,12 @@ public class GameController : MonoBehaviour
 	public static float moneyMultiplier;
 	public static float fameMultiplier;
 	#endregion
+
+	#region card effects
+	public static EffectCard.EffectType activeCardEffect;
+	public static float effectCardValue;
+	#endregion
+
 	private ConstructionArea[] constructionAreas;
 
 	#region get / set
@@ -244,7 +250,7 @@ public class GameController : MonoBehaviour
 	// Use this for initialization
 	void Start () 
 	{
-		ConstructionArea.OnConstructed += UpdateParameters;
+		ConstructionArea.OnConstructed += NewConstruction;
 		ConstructionArea.OnReady += UpdateParameters;
 		ConstructionArea.OnDiscarded += UpdateParameters;
 
@@ -263,6 +269,7 @@ public class GameController : MonoBehaviour
 		bonusMoney = 1;
 		cozinhaUpkeepBonus = 0;
 
+		activeCardEffect = EffectCard.EffectType.None;
 		activeConflictEffect = ConflictCard.SpecialEffect.None;
 		moneyMultiplier = 1;
 		fameMultiplier = 1;
@@ -402,6 +409,13 @@ public class GameController : MonoBehaviour
 		
 		Upkeep = upkeep;
 		#endregion
+	}
+
+	private void NewConstruction(Card c)
+	{
+		constructionCardsPlayedThisTurn++;
+
+		UpdateParameters();
 	}
 
 	private void NewEffect(Card c)

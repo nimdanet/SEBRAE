@@ -26,12 +26,14 @@ public class Card : MonoBehaviour
 
 	protected UILabel cardName;
 	protected UILabel cardDescription;
-	protected UISprite cardImage;
+	protected UITexture cardImage;
 	protected UILabel rewardMoneyLabel;
 	protected UILabel rewardFameLabel;
 	protected UILabel costMoneyLabel;
 	protected UILabel costFameLabel;
 	protected UILabel cooldownLabel;
+
+	private UIPanel panel;
 
 	void OnEnable()
 	{
@@ -45,9 +47,11 @@ public class Card : MonoBehaviour
 
 	protected virtual void Start()
 	{
-		cardName = transform.FindChild("Front").FindChild("Title").GetComponent<UILabel>();
-		cardDescription = transform.FindChild("Front").FindChild("Description").GetComponent<UILabel>();
-		cardImage = transform.FindChild("Front").FindChild("Image").GetComponent<UISprite>();
+		panel = GetComponent<UIPanel>();
+
+		cardName = transform.FindChild("Front").FindChild("Title").FindChild ("Label").GetComponent<UILabel>();
+		cardDescription = transform.FindChild("Front").FindChild("Description").FindChild ("Label").GetComponent<UILabel>();
+		cardImage = transform.FindChild("Front").FindChild("Image").GetComponent<UITexture>();
 
 		rewardMoneyLabel = transform.FindChild("Front").FindChild("Reward Money").FindChild("Label").GetComponent<UILabel>();
 		rewardFameLabel = transform.FindChild("Front").FindChild("Reward Fama").FindChild("Label").GetComponent<UILabel>();
@@ -57,10 +61,12 @@ public class Card : MonoBehaviour
 
 		cardName.text = nome;
 		cardDescription.text = description;
+		if(image != null)
+			cardImage.mainTexture = image;
 		rewardMoneyLabel.text = moneyReward.ToString();
 		rewardFameLabel.text = fameReward.ToString();
 		costMoneyLabel.text = cost.ToString();
-		costFameLabel.text = minFame.ToString();
+		costFameLabel.text = (minFame == -5) ? "--" : minFame.ToString();
 		cooldownLabel.text = cooldown.ToString();
 
 		fullCooldown = cooldown;
@@ -80,6 +86,14 @@ public class Card : MonoBehaviour
 	{
 		TrashCan.Discard(this);
 
-		gameObject.SetActive(false);
+		//gameObject.SetActive(false);
+	}
+
+	void OnHover(bool isOver)
+	{
+		if(isOver)
+			panel.depth += 10;
+		else
+			panel.depth -= 10;
 	}
 }

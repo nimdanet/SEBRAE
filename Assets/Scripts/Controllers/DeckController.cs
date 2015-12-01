@@ -105,9 +105,6 @@ public class DeckController : MonoBehaviour
 			conflictDeck[i] = conflictDeck[randomIndex];
 			conflictDeck[randomIndex] = temp;
 		}
-
-		foreach(GameConflictCard gcc in conflictDeck)
-			Debug.Log(gcc.ToString());
 	}
 
 	public void DrawCards(int cardsToDraw)
