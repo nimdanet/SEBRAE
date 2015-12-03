@@ -66,17 +66,17 @@ public class EffectArea : MonoBehaviour
 			if(GameController.CardsPlayedThisTurn >= GameController.MaxCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CARDS!
-				Debug.Log(string.Format("Played {0} / {1} cards. Can't play more cards", GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
+				Popup.ShowOk(string.Format("Played {0} / {1} cards. Can't play more cards", GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
 			}
 			else if(GameController.EffectCardsPlayedThisTurn >= GameController.MaxEffectCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CONSTRUCTION CARDS!
-				Debug.Log(string.Format("Played {0} / {1} effect cards. Can't play more cards", GameController.EffectCardsPlayedThisTurn, GameController.MaxEffectCardsPerTurn));
+				Popup.ShowOk(string.Format("Played {0} / {1} effect cards. Can't play more cards", GameController.EffectCardsPlayedThisTurn, GameController.MaxEffectCardsPerTurn));
 			}
 			else if(GameController.Fame < card.minFame)
 			{
 				//TODO: feedback NO FAME!
-				Debug.Log(string.Format("Fame {0} Required Fame {1} No FAME", GameController.Fame, card.minFame));
+				Popup.ShowOk(string.Format("Não tem fama suficiente. ({0} / {1}) ", GameController.Fame, card.minFame));
 			}
 			
 			/*else if(GameController.Money < card.cost && card.cost != 0)
@@ -87,7 +87,7 @@ public class EffectArea : MonoBehaviour
 			else if(!((EffectCard)card).CanBePlayed())
 			{
 				//TODO: feecback cannot be played
-				Debug.Log(((EffectCard)card).ErrorMessage);
+				Popup.ShowOk(((EffectCard)card).ErrorMessage);
 			}
 			else
 			{

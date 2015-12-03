@@ -173,7 +173,7 @@ public class GameController : MonoBehaviour
 
 	public static bool IsGameOver
 	{
-		get { return Fame <= -5; }
+		get { return Fame <= MinFame || Fame >= MaxFame; }
 	}
 
 	public static int MaxFame
@@ -323,11 +323,11 @@ public class GameController : MonoBehaviour
 
 	private void VerifyEndGame()
 	{
-		if(Fame <= -5)
-			Debug.Log("Game Over");
+		if(Fame <= MinFame)
+			Popup.ShowBlank("GAME OVER");
 
-		if(Fame >= 100)
-			Debug.Log("Winner, don't do drugs!!!");
+		if(Fame >= MaxFame)
+			Popup.ShowBlank("Winner, don't do drugs!!!");
 	}
 
 	private void ShowConflictCard()

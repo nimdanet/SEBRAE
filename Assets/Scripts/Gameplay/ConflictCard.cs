@@ -6,6 +6,8 @@ public class ConflictCard : MonoBehaviour
 {
 	#region Action
 	public static event Action<SpecialEffect> OnActive;
+	public static event Action OnShow;
+	public static event Action OnHide;
 	#endregion
 
 	public enum ConflictType
@@ -33,6 +35,13 @@ public class ConflictCard : MonoBehaviour
 		None,
 	}
 
+	#region get / set
+	public static bool IsActive
+	{
+		get { return active; }
+	}
+	#endregion
+
 	public string nome;
 	public string description;
 	public Texture2D image;
@@ -40,6 +49,9 @@ public class ConflictCard : MonoBehaviour
 	public ConflictType conflictType;
 	public SpecialEffect specialEffect;
 	public float specialEffectValue;
+
+	private static bool active;
+
 
 	void Start()
 	{
@@ -49,6 +61,14 @@ public class ConflictCard : MonoBehaviour
 
 		cardName.text = nome;
 		cardDescription.text = string.Format(description, Mathf.Abs(specialEffectValue));
+
+		if(image != null)
+			cardImage.mainTexture = image;
+
+		active = true;
+
+		if(OnShow != null)
+			OnShow();
 	}
 
 	public void AtivaEfeito()
@@ -193,6 +213,12 @@ public class ConflictCard : MonoBehaviour
 			OnActive(specialEffect);
 
 		HUDController.Instance.HideConflictCard();
+
+		active = false;
+
+		if(OnHide != null)
+			OnHide();
+
 		Destroy(gameObject);
 	}
 }

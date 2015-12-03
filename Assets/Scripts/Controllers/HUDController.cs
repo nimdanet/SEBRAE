@@ -73,11 +73,14 @@ public class HUDController : MonoBehaviour
 	{
 		if(DeckController.CardsInHand > GameController.MaxCardsInHand)
 		{
-			Debug.Log(string.Format("Too many cards in hand ({0})", GameController.MaxCardsInHand));
+			Popup.ShowOk(string.Format("Muitas cartas na mão (limite: {0})", GameController.MaxCardsInHand));
 			return;
 		}
 
 		if(GameController.activeCardEffect != EffectCard.EffectType.None)
+			return;
+
+		if(Popup.IsActive || ConflictCard.IsActive)
 			return;
 
 		pointer.ResetToBeginning();

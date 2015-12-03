@@ -25,6 +25,7 @@ public class ConstructionArea : MonoBehaviour
 	public ConstructionCard constructionCard;
 
 	private SpriteRenderer spriteArea;
+	private Transform constructionHUD;
 	private Transform hudCard;
 	private UILabel countdown;
 
@@ -52,10 +53,12 @@ public class ConstructionArea : MonoBehaviour
 		c.a = 0;
 		spriteArea.color = c;
 
-		hudCard = GameObject.Find(gameObject.name.Replace("Area", "HUD")).transform;
-		countdown = hudCard.FindChild("Countdown").GetComponent<UILabel>();
-		countdown.enabled = false;
+		constructionHUD = GameObject.Find(gameObject.name.Replace("Area", "HUD")).transform;
+		hudCard = constructionHUD.FindChild("Card");
+		countdown = constructionHUD.FindChild("Countdown").GetComponent<UILabel>();
 
+		countdown.enabled = false;
+		hudCard.gameObject.SetActive(false);
 		inactive = false;
 	}
 
@@ -111,21 +114,21 @@ public class ConstructionArea : MonoBehaviour
 			if(GameController.CardsPlayedThisTurn >= GameController.MaxCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CARDS!
-				Debug.Log(string.Format("Played {0} / {1} cards. Can't play more cards", GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
+				Popup.ShowOk(string.Format("Played {0} / {1} cards. Can't play more cards", GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
 			}
 			else if(GameController.ConstructionCardsPlayedThisTurn >= GameController.MaxConstructionCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CONSTRUCTION CARDS!
-				Debug.Log(string.Format("Played {0} / {1} construction cards. Can't play more cards", GameController.ConstructionCardsPlayedThisTurn, GameController.MaxConstructionCardsPerTurn));
+				Popup.ShowOk(string.Format("Played {0} / {1} construction cards. Can't play more cards", GameController.ConstructionCardsPlayedThisTurn, GameController.MaxConstructionCardsPerTurn));
 			}
 			else if(GameController.Fame < card.minFame)
 			{
 				//TODO: feedback NO FAME!
-				Debug.Log(string.Format("Fame {0} Required Fame {1} No FAME", GameController.Fame, card.minFame));
+				Popup.ShowOk(string.Format("Não tem fama suficiente. ({0} / {1}) ", GameController.Fame, card.minFame));
 			}
 			else if(constructionCard != null && constructionCard.cooldown > 0)
 			{
-				Debug.Log (string.Format("Você já tem uma construção em andamento nesse lugar.", constructionCard.cooldown));
+				Popup.ShowOk (string.Format("Você já tem uma construção em andamento nesse lugar.", constructionCard.cooldown));
 			}
 			/*else if(GameController.Money < card.cost)
 			{
@@ -141,7 +144,7 @@ public class ConstructionArea : MonoBehaviour
 
 				//added card to gameplay
 				constructionCard = card as ConstructionCard;
-				card.transform.parent = hudCard.FindChild("Card");
+				card.transform.parent = hudCard;
 				card.transform.localPosition = Vector3.zero;
 				card.transform.localScale = Vector3.one;
 				card.GetComponent<Collider>().enabled = false;
@@ -149,7 +152,7 @@ public class ConstructionArea : MonoBehaviour
 				card.transform.FindChild("Back").localPosition = Vector3.zero;
 
 				//inactivate blank card
-				hudCard.FindChild("Card").FindChild("Blank").gameObject.SetActive(false);
+				hudCard.FindChild("Blank").gameObject.SetActive(false);
 
 				//change sprite and activate cooldown
 				spriteArea.sprite = constructionSprite;
@@ -233,7 +236,7 @@ public class ConstructionArea : MonoBehaviour
 		countdown.enabled = false;
 
 		//reactivate blank card
-		hudCard.FindChild("Card").FindChild("Blank").gameObject.SetActive(true);
+		hudCard.FindChild("Blank").gameObject.SetActive(true);
 	}
 
 	public void ZeraCooldown()
@@ -340,6 +343,9 @@ public class ConstructionArea : MonoBehaviour
 			if(spriteArea.color != wrongColor)
 				spriteArea.color = hoverColor;
 		}
+
+		if(constructionCard != null && (spriteArea.color == normalColor || spriteArea.color == inactiveColor))
+			hudCard.gameObject.SetActive(true);
 	}
 
 	void OnMouseExit() 
@@ -352,6 +358,9 @@ public class ConstructionArea : MonoBehaviour
 			if(spriteArea.color != wrongColor)
 				spriteArea.color = rightColor;
 		}
+
+		if(constructionCard != null && (spriteArea.color == normalColor || spriteArea.color == inactiveColor))
+			hudCard.gameObject.SetActive(false);
 	}
 
 	void OnMouseDown()

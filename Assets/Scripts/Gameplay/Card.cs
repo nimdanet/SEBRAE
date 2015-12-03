@@ -34,20 +34,46 @@ public class Card : MonoBehaviour
 	protected UILabel cooldownLabel;
 
 	private UIPanel panel;
+	private bool lastColliderStatus;
+	private int originalDepth;
 
-	void OnEnable()
+	#region get / set
+	public int Depth
 	{
-
+		set
+		{
+			originalDepth = value;
+			Panel.depth = value;
+		}
 	}
 
-	void OnDisable()
+	private UIPanel Panel
 	{
-		
+		get
+		{
+			if(panel == null)
+				panel = GetComponent<UIPanel>();
+
+			return panel;
+		}
+	}
+	#endregion
+
+	void OnDestroy()
+	{
+		Debug.Log("OnDestroy");
+		Popup.OnShow -= LockInteraction;
+		ConflictCard.OnShow -= LockInteraction;
+		Popup.OnHide -= UnlockInteraction;
+		ConflictCard.OnHide -= UnlockInteraction;
 	}
 
 	protected virtual void Start()
 	{
-		panel = GetComponent<UIPanel>();
+		Popup.OnShow += LockInteraction;
+		ConflictCard.OnShow += LockInteraction;
+		Popup.OnHide += UnlockInteraction;
+		ConflictCard.OnHide += UnlockInteraction;
 
 		cardName = transform.FindChild("Front").FindChild("Title").FindChild ("Label").GetComponent<UILabel>();
 		cardDescription = transform.FindChild("Front").FindChild("Description").FindChild ("Label").GetComponent<UILabel>();
@@ -66,8 +92,10 @@ public class Card : MonoBehaviour
 		rewardMoneyLabel.text = moneyReward.ToString();
 		rewardFameLabel.text = fameReward.ToString();
 		costMoneyLabel.text = cost.ToString();
-		costFameLabel.text = (minFame == -5) ? "--" : minFame.ToString();
+		costFameLabel.text = (minFame < 0) ? "--" : minFame.ToString();
 		cooldownLabel.text = cooldown.ToString();
+
+		originalDepth = Panel.depth;
 
 		fullCooldown = cooldown;
 	}
@@ -92,8 +120,28 @@ public class Card : MonoBehaviour
 	void OnHover(bool isOver)
 	{
 		if(isOver)
-			panel.depth += 10;
+		{
+			originalDepth = Panel.depth;
+			Panel.depth += 10;
+		}
 		else
-			panel.depth -= 10;
+			Panel.depth = originalDepth;
+	}
+
+	private void LockInteraction()
+	{
+		Debug.Log("Lock: " + nome);
+		Panel.depth = originalDepth;
+		lastColliderStatus = GetComponent<Collider>().enabled;
+		GetComponent<Collider>().enabled = false;
+
+		if(GameController.activeCardEffect == EffectCard.EffectType.DescartaCompraCartas)
+			UnlockInteraction();
+	}
+
+	private void UnlockInteraction()
+	{
+		Debug.Log("Unlock: " + nome);
+		GetComponent<Collider>().enabled = lastColliderStatus;
 	}
 }

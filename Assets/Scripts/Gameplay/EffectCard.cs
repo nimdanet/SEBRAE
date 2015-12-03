@@ -118,7 +118,7 @@ public class EffectCard : Card
 			GameController.activeCardEffect = effectType;
 			GameController.effectCardValue = specialEffectValue;
 			TrashCan.OnDiscarded += CardDiscarded;
-			Debug.Log("*Descarte " + GameController.effectCardValue + " cartas");
+			Popup.ShowBlank("Descarte " + GameController.effectCardValue + " cartas");
 			return;
 		}
 		else if(effectType == EffectType.DestroiConstrucao || effectType == EffectType.DiminuiCooldown)
@@ -155,7 +155,7 @@ public class EffectCard : Card
 	{
 		GameController.effectCardValue--;
 
-		Debug.Log("Descarte " + GameController.effectCardValue + " cartas");
+		Popup.ShowBlank("Descarte " + GameController.effectCardValue + " carta(s)");
 
 		if(GameController.effectCardValue == 0)
 		{
@@ -163,6 +163,8 @@ public class EffectCard : Card
 			TrashCan.OnDiscarded -= CardDiscarded;
 
 			DeckController.Instance.DrawCards(specialEffectValue);
+
+			Popup.Hide();
 
 			Discard();
 		}

@@ -41,6 +41,7 @@ public class DeckController : MonoBehaviour
 	public Transform conflictCardHolder;
 	public GameObject goodConflictDefault;
 	public GameObject badConflictDefault;
+	public float maxCardSpace = 95f;
 
 	void Start()
 	{
@@ -90,7 +91,7 @@ public class DeckController : MonoBehaviour
 		for (byte i = 0; i < deck.Count; i++) 
 		{
 			GameCard temp = deck[i];
-			int randomIndex = Random.Range(i, deck.Count);
+			int randomIndex = UnityEngine.Random.Range(i, deck.Count);
 			deck[i] = deck[randomIndex];
 			deck[randomIndex] = temp;
 		}
@@ -101,7 +102,7 @@ public class DeckController : MonoBehaviour
 		for (byte i = 0; i < conflictDeck.Count; i++) 
 		{
 			GameConflictCard temp = conflictDeck[i];
-			int randomIndex = Random.Range(i, conflictDeck.Count);
+			int randomIndex = UnityEngine.Random.Range(i, conflictDeck.Count);
 			conflictDeck[i] = conflictDeck[randomIndex];
 			conflictDeck[randomIndex] = temp;
 		}
@@ -200,7 +201,7 @@ public class DeckController : MonoBehaviour
 
 		discardedConflictPile.Add(conflictDeck[0]);
 		conflictDeck.RemoveAt(0);
-	
+
 		Debug.Log("Conflict Cards Left: " + conflictDeck.Count);
 		Debug.Log("Next Conflict Card: " + conflictDeck[0].ToString());
 	}
@@ -259,7 +260,7 @@ public class DeckController : MonoBehaviour
 			pos.x = initialPosition + (cellWidth * i);
 			pos.y = 0;
 			cardsInHand[i].transform.localPosition = pos;
-			cardsInHand[i].GetComponent<UIPanel>().depth = 10 + i;
+			cardsInHand[i].Depth = 10 + i;
 		}
 	}
 

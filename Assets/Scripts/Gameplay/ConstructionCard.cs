@@ -38,16 +38,6 @@ public class ConstructionCard : Card
 	}
 	#endregion
 
-	void OnEnable()
-	{
-
-	}
-
-	void OnDisable()
-	{
-
-	}
-
 	protected override void Start ()
 	{
 		base.Start ();
