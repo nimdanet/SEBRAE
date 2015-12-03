@@ -53,6 +53,8 @@ public class GameController : MonoBehaviour
 	public static float effectCardValue;
 	#endregion
 
+	private bool gameStarted;
+
 	private ConstructionArea[] constructionAreas;
 
 	#region get / set
@@ -231,6 +233,11 @@ public class GameController : MonoBehaviour
 		get { return activeConflictEffect; }
 	}
 
+	public static bool IsGameStarted
+	{
+		get { return Instance.gameStarted; }
+	}
+
 	#endregion
 
 	#region singleton
@@ -248,7 +255,7 @@ public class GameController : MonoBehaviour
 	#endregion
 
 	// Use this for initialization
-	void Start () 
+	IEnumerator Start () 
 	{
 		ConstructionArea.OnConstructed += NewConstruction;
 		ConstructionArea.OnReady += UpdateParameters;
@@ -273,6 +280,17 @@ public class GameController : MonoBehaviour
 		activeConflictEffect = ConflictCard.SpecialEffect.None;
 		moneyMultiplier = 1;
 		fameMultiplier = 1;
+
+		yield return new WaitForSeconds(0.5f);
+
+		HowToPlay.Instance.Open();
+	}
+
+	public void StartGame()
+	{
+		gameStarted = true;
+
+		DeckController.Instance.DrawCards(InitialCards);
 	}
 
 	public void NextWeek()
@@ -316,7 +334,7 @@ public class GameController : MonoBehaviour
 		
 		UpdateParameters();
 
-		DeckController.Instance.DrawCards(cardsToDrawPerMonth);
+		//DeckController.Instance.DrawCards(cardsToDrawPerMonth);
 
 		Month++;
 	}

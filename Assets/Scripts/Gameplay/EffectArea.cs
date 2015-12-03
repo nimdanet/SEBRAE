@@ -101,6 +101,7 @@ public class EffectArea : MonoBehaviour
 				card.GetComponent<Collider>().enabled = false;
 				card.transform.FindChild("Front").localPosition = Vector3.zero;
 				card.transform.FindChild("Back").localPosition = Vector3.zero;
+				card.placed = true;
 
 				//change sprite and activate cooldown
 				countdown.enabled = true;

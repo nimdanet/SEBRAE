@@ -33,6 +33,7 @@ public class ConflictCard : MonoBehaviour
 		CompletaCartas,
 		ZeraCooldown,
 		None,
+		GoldFame,
 	}
 
 	#region get / set
@@ -49,18 +50,19 @@ public class ConflictCard : MonoBehaviour
 	public ConflictType conflictType;
 	public SpecialEffect specialEffect;
 	public float specialEffectValue;
+	public float specialEffectValue2;
 
 	private static bool active;
 
 
 	void Start()
 	{
-		UILabel cardName = transform.FindChild("Front").FindChild("Title").GetComponent<UILabel>();
+		UILabel cardName = transform.FindChild("Front").FindChild("Title").FindChild("Label").GetComponent<UILabel>();
 		UISprite cardImage = transform.FindChild("Front").FindChild("Image").GetComponent<UISprite>();
-		UILabel cardDescription = transform.FindChild("Front").FindChild("Description").GetComponent<UILabel>();
+		UILabel cardDescription = transform.FindChild("Front").FindChild("Description").FindChild("Label").GetComponent<UILabel>();
 
 		cardName.text = nome;
-		cardDescription.text = string.Format(description, Mathf.Abs(specialEffectValue));
+		cardDescription.text = string.Format(description, Mathf.Abs(specialEffectValue), Mathf.Abs(specialEffectValue2));
 
 		if(image != null)
 			cardImage.mainTexture = image;
@@ -83,6 +85,11 @@ public class ConflictCard : MonoBehaviour
 
 			case SpecialEffect.Fame:
 				GameController.Fame += (int)specialEffectValue;
+			break;
+
+			case SpecialEffect.GoldFame:
+				GameController.Money += (int)specialEffectValue;
+				GameController.Fame += (int)specialEffectValue2;
 			break;
 
 			case SpecialEffect.ProfitGold:
@@ -218,6 +225,8 @@ public class ConflictCard : MonoBehaviour
 
 		if(OnHide != null)
 			OnHide();
+
+		DeckController.Instance.DrawCards(GameController.Instance.cardsToDrawPerWeek + GameController.Instance.cardsToDrawPerMonth);
 
 		Destroy(gameObject);
 	}

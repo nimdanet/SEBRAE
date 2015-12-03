@@ -150,6 +150,7 @@ public class ConstructionArea : MonoBehaviour
 				card.GetComponent<Collider>().enabled = false;
 				card.transform.FindChild("Front").localPosition = Vector3.zero;
 				card.transform.FindChild("Back").localPosition = Vector3.zero;
+				card.placed = true;
 
 				//inactivate blank card
 				hudCard.FindChild("Blank").gameObject.SetActive(false);

@@ -1,8 +1,13 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 
 public class HUDController : MonoBehaviour 
 {
+	#region Action
+	public static event Action OnPassWeek;
+	#endregion
+
 	public UISprite fameFill;
 	public UILabel fameLabel;
 
@@ -89,6 +94,9 @@ public class HUDController : MonoBehaviour
 		pointer.to = new Vector3(0, 0, 90 - (90f * (GameController.Week - 0f)));
 
 		pointer.PlayForward();
+
+		if(OnPassWeek != null)
+			OnPassWeek();
 	}
 
 	public void ShowConflictCard()

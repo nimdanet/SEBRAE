@@ -1,9 +1,15 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
 public class DeckController : MonoBehaviour 
 {
+	#region action
+	public static event Action StartDrawCards;
+	public static event Action FinishDrawCards;
+	#endregion
+
 	#region singleton
 	private static DeckController instance;
 	public static DeckController Instance
@@ -42,6 +48,11 @@ public class DeckController : MonoBehaviour
 	public GameObject goodConflictDefault;
 	public GameObject badConflictDefault;
 	public float maxCardSpace = 95f;
+
+	[Header("Card Tween")]
+	public Transform spawnPosition;
+	public Transform waypoint1;
+	public float timeDrawing;
 
 	void Start()
 	{
@@ -83,7 +94,7 @@ public class DeckController : MonoBehaviour
 
 		ShuffleDeck();
 		ShuffleConflictDeck();
-		DrawCards(GameController.InitialCards);
+		//DrawCards(GameController.InitialCards);
 	}
 
 	public void ShuffleDeck()
@@ -110,25 +121,33 @@ public class DeckController : MonoBehaviour
 
 	public void DrawCards(int cardsToDraw)
 	{
+		StartCoroutine(DrawCards(cardsToDraw, timeDrawing * 0.45f));
+	}
+
+	private IEnumerator DrawCards(int cardsToDraw, float timeBetweenDraw)
+	{
+		if(StartDrawCards != null)
+			StartDrawCards();
+
 		if(deck.Count == 0)
 			RecicleCards();
 
 		for(byte i = 0; i < cardsToDraw; i++)
 		{
 			GameCard gameCard = deck[0] as GameCard;
-
+			
 			GameObject card = null;
-
+			
 			if(gameCard.GetType() == typeof(GameConstructionCard))
 				card = constructionCardDefault;
 			else if(gameCard.GetType() == typeof(GameEffectCard))
 				card = effectCardDefault;
-
+			
 			card = Instantiate(card) as GameObject;
 			Card cardComponent = card.GetComponent<Card>();
-
+			
 			cardComponent.originalCard = gameCard;
-
+			
 			cardComponent.nome = deck[0].nome;
 			cardComponent.description = deck[0].description;
 			cardComponent.image = deck[0].image;
@@ -137,12 +156,12 @@ public class DeckController : MonoBehaviour
 			cardComponent.moneyReward = deck[0].moneyReward;
 			cardComponent.fameReward = deck[0].fameReward;
 			cardComponent.cooldown = deck[0].cooldown;
-
+			
 			if(gameCard.GetType() == typeof(GameConstructionCard))
 			{
 				ConstructionCard constructionCardComponent = cardComponent as ConstructionCard;
 				GameConstructionCard gameConstructionCard = deck[0] as GameConstructionCard;
-
+				
 				constructionCardComponent.specialEffect = gameConstructionCard.specialEffect;
 				constructionCardComponent.specialEffectValue = gameConstructionCard.specialEffectValue;
 				constructionCardComponent.constructionType = gameConstructionCard.constructionType;
@@ -154,22 +173,66 @@ public class DeckController : MonoBehaviour
 			{
 				EffectCard effectCardComponent = cardComponent as EffectCard;
 				GameEffectCard gameEffectCard = deck[0] as GameEffectCard;
-
+				
 				effectCardComponent.specialEffect = gameEffectCard.specialEffect;
 				effectCardComponent.specialEffectValue = gameEffectCard.specialEffectValue;
 				effectCardComponent.effectType = gameEffectCard.effectType;
 			}
-
+			
 			cardsInHand.Add(cardComponent);
 			card.transform.parent = hand.transform;
+			card.transform.localPosition = spawnPosition.localPosition;
 			card.transform.localScale = Vector3.one;
-
+			
 			deck.RemoveAt(0);
+
+			ArrangeDepths();
+			//ArrangeHand();
+
+			yield return new WaitForSeconds(timeBetweenDraw);
 		}
 
-		Debug.Log("Cards Left: " + deck.Count);
+		bool cardsFinishedTweening = false;
+		while(!cardsFinishedTweening)
+		{
+			cardsFinishedTweening = true;
+			//wait for last card to stop tweening
+			foreach(Card card in cardsInHand)
+			{
+				if(card.IsTweening)
+				{
+					cardsFinishedTweening = false;
+					break;
+				}
+			}
+			yield return null;
+		}
 
-		ArrangeHand();
+		if(FinishDrawCards != null)
+			FinishDrawCards();
+
+		Debug.Log("Cards Left: " + deck.Count);
+	}
+
+	public Vector3 GetPlacePosition(Card card)
+	{
+		Vector3 pos = Vector3.zero;
+		for(int i = 0; i < cardsInHand.Count; i++)
+		{
+			if(cardsInHand[i] == card)
+			{
+				BoxCollider collider = hand.GetComponent<BoxCollider>();
+				float cellWidth = Mathf.Min(collider.size.x / (Mathf.Max(i, 1)), maxCardSpace);
+				float initialPosition = -((cellWidth * (i + 1)) / 2);
+
+				pos = cardsInHand[i].transform.localPosition;
+				pos.x = initialPosition + (cellWidth * i);
+				pos.y = 0;
+
+			}
+		}
+
+		return pos;
 	}
 
 	public void ShowConflictCard()
@@ -195,6 +258,7 @@ public class DeckController : MonoBehaviour
 		cardComponent.conflictType = conflictDeck[0].type;
 		cardComponent.specialEffect = conflictDeck[0].specialEffect;
 		cardComponent.specialEffectValue = conflictDeck[0].specialEffectValue;
+		cardComponent.specialEffectValue2 = conflictDeck[0].specialEffectValue2;
 
 		card.transform.parent = conflictCardHolder.transform;
 		card.transform.localScale = Vector3.one;
@@ -246,21 +310,40 @@ public class DeckController : MonoBehaviour
 		ArrangeHand();
 	}
 
+	private void ArrangeDepths()
+	{
+		for(byte i = 0; i < cardsInHand.Count; i++)
+			cardsInHand[i].Depth = 10 + i;
+	}
+
 	public void ArrangeHand()
 	{
-		if(cardsInHand.Count == 0) return;
+		if(CardsInHand == 0) return;
+
+		int realCardsInHand = 0;
+		foreach(Card card in cardsInHand)
+		{
+			if(!card.IsTweening)
+				realCardsInHand++;
+		}
 
 		BoxCollider collider = hand.GetComponent<BoxCollider>();
-		float initialPosition = -(collider.size.x / 2f);
-		float cellWidth = collider.size.x / (Mathf.Max(cardsInHand.Count - 1, 1));
+		float cellWidth = Mathf.Min(collider.size.x / (Mathf.Max(realCardsInHand - 1, 1)), maxCardSpace);
+		float initialPosition = -((cellWidth * realCardsInHand) / 2);
+		int realIndex = 0;
 
 		for(byte i = 0; i < cardsInHand.Count; i++)
 		{
+			cardsInHand[i].Depth = 10 + i;
+
+			if(cardsInHand[i].IsTweening) continue;
+
 			Vector3 pos = cardsInHand[i].transform.localPosition;
-			pos.x = initialPosition + (cellWidth * i);
+			pos.x = initialPosition + (cellWidth * realIndex);
 			pos.y = 0;
 			cardsInHand[i].transform.localPosition = pos;
-			cardsInHand[i].Depth = 10 + i;
+
+			realIndex++;
 		}
 	}
 
@@ -320,6 +403,7 @@ public class GameConflictCard
 	public ConflictCard.ConflictType type;
 	public ConflictCard.SpecialEffect specialEffect;
 	public float specialEffectValue;
+	public float specialEffectValue2;
 
 	public override string ToString ()
 	{

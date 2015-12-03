@@ -34,8 +34,13 @@ public class Card : MonoBehaviour
 	protected UILabel cooldownLabel;
 
 	private UIPanel panel;
-	private bool lastColliderStatus;
 	private int originalDepth;
+	private TweenPosition tweenPosition;
+	private TweenScale tweenScale;
+	private bool isTweening;
+
+	[HideInInspector]
+	public bool placed;
 
 	#region get / set
 	public int Depth
@@ -57,23 +62,41 @@ public class Card : MonoBehaviour
 			return panel;
 		}
 	}
+
+	public bool IsTweening
+	{
+		get { return isTweening; }
+	}
 	#endregion
 
 	void OnDestroy()
 	{
 		Debug.Log("OnDestroy");
 		Popup.OnShow -= LockInteraction;
-		ConflictCard.OnShow -= LockInteraction;
 		Popup.OnHide -= UnlockInteraction;
+		ConflictCard.OnShow -= LockInteraction;
 		ConflictCard.OnHide -= UnlockInteraction;
+		DeckController.StartDrawCards -= LockInteraction;
+		DeckController.FinishDrawCards -= UnlockInteraction;
+		HUDController.OnPassWeek -= LockInteraction;
+		HowToPlay.OnOpen -= LockInteraction;
+		HowToPlay.OnClose -= UnlockInteraction;
 	}
 
 	protected virtual void Start()
 	{
 		Popup.OnShow += LockInteraction;
-		ConflictCard.OnShow += LockInteraction;
 		Popup.OnHide += UnlockInteraction;
+		ConflictCard.OnShow += LockInteraction;
 		ConflictCard.OnHide += UnlockInteraction;
+		DeckController.StartDrawCards += LockInteraction;
+		DeckController.FinishDrawCards += UnlockInteraction;
+		HUDController.OnPassWeek += LockInteraction;
+		HowToPlay.OnOpen += LockInteraction;
+		HowToPlay.OnClose += UnlockInteraction;
+
+		tweenPosition = GetComponent<TweenPosition>();
+		tweenScale = GetComponent<TweenScale>();
 
 		cardName = transform.FindChild("Front").FindChild("Title").FindChild ("Label").GetComponent<UILabel>();
 		cardDescription = transform.FindChild("Front").FindChild("Description").FindChild ("Label").GetComponent<UILabel>();
@@ -96,8 +119,60 @@ public class Card : MonoBehaviour
 		cooldownLabel.text = cooldown.ToString();
 
 		originalDepth = Panel.depth;
+		placed = false;
 
 		fullCooldown = cooldown;
+
+		StartCoroutine(DoTween());
+	}
+
+	private IEnumerator DoTween()
+	{
+		isTweening = true;
+		LockInteraction();
+
+		tweenPosition.ResetToBeginning();
+		tweenPosition.duration = DeckController.Instance.timeDrawing * 0.2f;
+		tweenPosition.from = DeckController.Instance.spawnPosition.localPosition;
+		tweenPosition.to = DeckController.Instance.waypoint1.localPosition;
+		tweenPosition.PlayForward();
+
+		tweenScale.ResetToBeginning();
+		tweenScale.duration = DeckController.Instance.timeDrawing * 0.2f;
+		tweenScale.from = Vector3.one;
+		tweenScale.to = Vector3.one * 1.5f;
+		tweenScale.PlayForward();
+
+		while(tweenPosition.isActiveAndEnabled)
+			yield return null;
+
+		tweenPosition.ResetToBeginning();
+		tweenPosition.duration = DeckController.Instance.timeDrawing * 0.6f;
+		tweenPosition.from = tweenPosition.to;
+		tweenPosition.to = tweenPosition.from + new Vector3(200f, 0);
+		tweenPosition.PlayForward();
+
+		while(tweenPosition.isActiveAndEnabled)
+			yield return null;
+
+		tweenPosition.ResetToBeginning();
+		tweenPosition.duration = DeckController.Instance.timeDrawing * 0.2f;
+		tweenPosition.from = tweenPosition.to;
+		tweenPosition.to = DeckController.Instance.GetPlacePosition(this);
+		tweenPosition.PlayForward();
+
+		tweenScale.ResetToBeginning();
+		tweenScale.duration = DeckController.Instance.timeDrawing * 0.2f;
+		tweenScale.from = Vector3.one * 1.5f;
+		tweenScale.to = Vector3.one;
+		tweenScale.PlayForward();
+		
+		while(tweenPosition.isActiveAndEnabled)
+			yield return null;
+
+		isTweening = false;
+
+		DeckController.Instance.ArrangeHand();
 	}
 
 	public void ResetCooldown()
@@ -130,9 +205,8 @@ public class Card : MonoBehaviour
 
 	private void LockInteraction()
 	{
-		Debug.Log("Lock: " + nome);
+		//Debug.Log("Lock: " + nome);
 		Panel.depth = originalDepth;
-		lastColliderStatus = GetComponent<Collider>().enabled;
 		GetComponent<Collider>().enabled = false;
 
 		if(GameController.activeCardEffect == EffectCard.EffectType.DescartaCompraCartas)
@@ -142,6 +216,6 @@ public class Card : MonoBehaviour
 	private void UnlockInteraction()
 	{
 		Debug.Log("Unlock: " + nome);
-		GetComponent<Collider>().enabled = lastColliderStatus;
+		GetComponent<Collider>().enabled = !placed;
 	}
 }
