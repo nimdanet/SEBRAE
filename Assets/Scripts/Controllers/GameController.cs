@@ -54,6 +54,7 @@ public class GameController : MonoBehaviour
 	#endregion
 
 	private bool gameStarted;
+	private bool alreadyWon;
 
 	private ConstructionArea[] constructionAreas;
 
@@ -315,7 +316,7 @@ public class GameController : MonoBehaviour
 
 		VerifyEndGame();
 
-		if(Week == 1 && !IsGameOver)
+		if(Week == 1)
 			ShowConflictCard();
 
 		Debug.Log(string.Format("Passed to Week {0}", Week));
@@ -344,8 +345,11 @@ public class GameController : MonoBehaviour
 		if(Fame <= MinFame)
 			Popup.ShowBlank("GAME OVER");
 
-		if(Fame >= MaxFame)
-			Popup.ShowBlank("Winner, don't do drugs!!!");
+		if(Fame >= MaxFame && !alreadyWon)
+		{
+			alreadyWon = true;
+			Popup.ShowOk("Winner, don't do drugs!!!");
+		}
 	}
 
 	private void ShowConflictCard()

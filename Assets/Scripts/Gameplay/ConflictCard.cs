@@ -58,7 +58,7 @@ public class ConflictCard : MonoBehaviour
 	void Start()
 	{
 		UILabel cardName = transform.FindChild("Front").FindChild("Title").FindChild("Label").GetComponent<UILabel>();
-		UISprite cardImage = transform.FindChild("Front").FindChild("Image").GetComponent<UISprite>();
+		UITexture cardImage = transform.FindChild("Front").FindChild("Image").GetComponent<UITexture>();
 		UILabel cardDescription = transform.FindChild("Front").FindChild("Description").FindChild("Label").GetComponent<UILabel>();
 
 		cardName.text = nome;

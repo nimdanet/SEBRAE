@@ -71,7 +71,6 @@ public class Card : MonoBehaviour
 
 	void OnDestroy()
 	{
-		Debug.Log("OnDestroy");
 		Popup.OnShow -= LockInteraction;
 		Popup.OnHide -= UnlockInteraction;
 		ConflictCard.OnShow -= LockInteraction;
