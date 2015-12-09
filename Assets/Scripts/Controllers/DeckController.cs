@@ -27,8 +27,9 @@ public class DeckController : MonoBehaviour
 	#region Get / Set
 	public static int CardsInHand
 	{
-		get { return cardsInHand.Count; }
+		get { return (cardsInHand == null) ? 0 : cardsInHand.Count; }
 	}
+	
 	#endregion
 
 	public List<GameConstructionCard> constructionCards;
@@ -36,7 +37,7 @@ public class DeckController : MonoBehaviour
 	public List<GameConflictCard> conflictCards;
 	private static List<GameCard> deck;
 	private static List<GameConflictCard> conflictDeck;
-	private static List<Card> cardsInHand;
+	public static List<Card> cardsInHand;
 	public static List<GameCard> discardedPile;
 	public static List<GameConflictCard> discardedConflictPile;
 
@@ -54,11 +55,22 @@ public class DeckController : MonoBehaviour
 	public Transform waypoint1;
 	public float timeDrawing;
 
-	void Start()
+	void OnDestroy()
+	{
+		ConstructionArea.OnConstructed -= NewConstruction;
+		TrashCan.OnDiscarded -= CardDiscarded;
+		EffectArea.OnPlayed -= NewEffect;
+		
+		GameController.OnGameLoaded -= LoadCardsInHand;
+	}
+
+	void Awake()
 	{
 		ConstructionArea.OnConstructed += NewConstruction;
 		TrashCan.OnDiscarded += CardDiscarded;
 		EffectArea.OnPlayed += NewEffect;
+
+		GameController.OnGameLoaded += LoadCardsInHand;
 
 		Build();
 	}
@@ -94,7 +106,6 @@ public class DeckController : MonoBehaviour
 
 		ShuffleDeck();
 		ShuffleConflictDeck();
-		//DrawCards(GameController.InitialCards);
 	}
 
 	public void ShuffleDeck()
@@ -119,6 +130,24 @@ public class DeckController : MonoBehaviour
 		}
 	}
 
+	private void LoadCardsInHand()
+	{
+		foreach(CardsSaved cardSaved in SaveController.CardsSaved)
+		{
+			GameCard gameCard = SearchCard(cardSaved.name, cardSaved.level);
+			GameObject card = InstantiateCard(gameCard);
+
+			card.transform.parent = hand.transform;
+			card.transform.localScale = Vector3.one;
+			cardsInHand.Add(card.GetComponent<Card>());
+			card.GetComponent<Card>().canDoTween = false;
+			
+			deck.Remove(gameCard);
+		}
+
+		ArrangeHand();
+	}
+
 	public void DrawCards(int cardsToDraw)
 	{
 		StartCoroutine(DrawCards(cardsToDraw, timeDrawing * 0.45f));
@@ -136,50 +165,9 @@ public class DeckController : MonoBehaviour
 		{
 			GameCard gameCard = deck[0] as GameCard;
 			
-			GameObject card = null;
+			GameObject card = InstantiateCard(gameCard);
 			
-			if(gameCard.GetType() == typeof(GameConstructionCard))
-				card = constructionCardDefault;
-			else if(gameCard.GetType() == typeof(GameEffectCard))
-				card = effectCardDefault;
-			
-			card = Instantiate(card) as GameObject;
-			Card cardComponent = card.GetComponent<Card>();
-			
-			cardComponent.originalCard = gameCard;
-			
-			cardComponent.nome = deck[0].nome;
-			cardComponent.description = deck[0].description;
-			cardComponent.image = deck[0].image;
-			cardComponent.cost = deck[0].cost;
-			cardComponent.minFame = deck[0].minFame;
-			cardComponent.moneyReward = deck[0].moneyReward;
-			cardComponent.fameReward = deck[0].fameReward;
-			cardComponent.cooldown = deck[0].cooldown;
-			
-			if(gameCard.GetType() == typeof(GameConstructionCard))
-			{
-				ConstructionCard constructionCardComponent = cardComponent as ConstructionCard;
-				GameConstructionCard gameConstructionCard = deck[0] as GameConstructionCard;
-				
-				constructionCardComponent.specialEffect = gameConstructionCard.specialEffect;
-				constructionCardComponent.specialEffectValue = gameConstructionCard.specialEffectValue;
-				constructionCardComponent.constructionType = gameConstructionCard.constructionType;
-				constructionCardComponent.upkeep = gameConstructionCard.upkeep;
-				constructionCardComponent.sprite = gameConstructionCard.sprite;
-				constructionCardComponent.level = gameConstructionCard.level;
-			}
-			else if(gameCard.GetType() == typeof(GameEffectCard))
-			{
-				EffectCard effectCardComponent = cardComponent as EffectCard;
-				GameEffectCard gameEffectCard = deck[0] as GameEffectCard;
-				
-				effectCardComponent.specialEffect = gameEffectCard.specialEffect;
-				effectCardComponent.specialEffectValue = gameEffectCard.specialEffectValue;
-				effectCardComponent.effectType = gameEffectCard.effectType;
-			}
-			
-			cardsInHand.Add(cardComponent);
+			cardsInHand.Add(card.GetComponent<Card>());
 			card.transform.parent = hand.transform;
 			card.transform.localPosition = spawnPosition.localPosition;
 			card.transform.localScale = Vector3.one;
@@ -214,6 +202,89 @@ public class DeckController : MonoBehaviour
 		Debug.Log("Cards Left: " + deck.Count);
 	}
 
+	public static GameCard SearchCard(string nome)
+	{
+		return SearchCard(nome, 0);
+	}
+
+	public static GameCard SearchCard(string nome, int level)
+	{
+		GameCard gameCard = null;
+		foreach(GameCard gCard in deck)
+		{
+			if(gCard.nome == nome)
+			{
+				GameConstructionCard cCard = gCard as GameConstructionCard;
+
+				if(cCard == null)
+				{
+					gameCard = gCard;
+					break;
+				}
+				else
+				{
+					if(cCard.level == level)
+					{
+						gameCard = cCard;
+						break;
+					}
+				}
+
+			}
+		}
+
+		return gameCard;
+	}
+
+	public GameObject InstantiateCard(GameCard gameCard)
+	{
+		GameObject card = null;
+
+		if(gameCard.GetType() == typeof(GameConstructionCard))
+			card = constructionCardDefault;
+		else if(gameCard.GetType() == typeof(GameEffectCard))
+			card = effectCardDefault;
+		
+		card = Instantiate(card) as GameObject;
+		Card cardComponent = card.GetComponent<Card>();
+		
+		cardComponent.originalCard = gameCard;
+		
+		cardComponent.nome = gameCard.nome;
+		cardComponent.description = gameCard.description;
+		cardComponent.image = gameCard.image;
+		cardComponent.cost = gameCard.cost;
+		cardComponent.minFame = gameCard.minFame;
+		cardComponent.moneyReward = gameCard.moneyReward;
+		cardComponent.fameReward = gameCard.fameReward;
+		cardComponent.cooldown = gameCard.cooldown;
+		
+		if(gameCard.GetType() == typeof(GameConstructionCard))
+		{
+			ConstructionCard constructionCardComponent = cardComponent as ConstructionCard;
+			GameConstructionCard gameConstructionCard = gameCard as GameConstructionCard;
+			
+			constructionCardComponent.specialEffect = gameConstructionCard.specialEffect;
+			constructionCardComponent.specialEffectValue = gameConstructionCard.specialEffectValue;
+			constructionCardComponent.constructionType = gameConstructionCard.constructionType;
+			constructionCardComponent.upkeep = gameConstructionCard.upkeep;
+			constructionCardComponent.sprite = gameConstructionCard.sprite;
+			constructionCardComponent.level = gameConstructionCard.level;
+			constructionCardComponent.sound = gameConstructionCard.sound;
+		}
+		else if(gameCard.GetType() == typeof(GameEffectCard))
+		{
+			EffectCard effectCardComponent = cardComponent as EffectCard;
+			GameEffectCard gameEffectCard = gameCard as GameEffectCard;
+			
+			effectCardComponent.specialEffect = gameEffectCard.specialEffect;
+			effectCardComponent.specialEffectValue = gameEffectCard.specialEffectValue;
+			effectCardComponent.effectType = gameEffectCard.effectType;
+		}
+
+		return card;
+	}
+
 	public Vector3 GetPlacePosition(Card card)
 	{
 		Vector3 pos = Vector3.zero;
@@ -245,9 +316,15 @@ public class DeckController : MonoBehaviour
 		GameObject card = null;
 		
 		if(gameCard.type == ConflictCard.ConflictType.Good)
+		{
 			card = goodConflictDefault;
+			SoundController.PlaySoundFX(SoundController.SoundFX.Good);
+		}
 		else if(gameCard.type == ConflictCard.ConflictType.Bad)
+		{
 			card = badConflictDefault;
+			SoundController.PlaySoundFX(SoundController.SoundFX.Bad);
+		}
 		
 		card = Instantiate(card) as GameObject;
 		ConflictCard cardComponent = card.GetComponent<ConflictCard>();
@@ -261,6 +338,7 @@ public class DeckController : MonoBehaviour
 		cardComponent.specialEffectValue2 = conflictDeck[0].specialEffectValue2;
 
 		card.transform.parent = conflictCardHolder.transform;
+		card.transform.localPosition = Vector3.zero;
 		card.transform.localScale = Vector3.one;
 
 		discardedConflictPile.Add(conflictDeck[0]);
@@ -381,6 +459,7 @@ public class GameConstructionCard : GameCard
 	public int upkeep;
 	public Sprite sprite;
 	public int level;
+	public AudioClip sound;
 }
 
 [System.Serializable]

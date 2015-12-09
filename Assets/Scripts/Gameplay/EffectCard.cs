@@ -54,6 +54,8 @@ public class EffectCard : Card
 	{
 		base.Start ();
 
+		cardType = Card.Type.Effect;
+
 		cardDescription.text = GetDescription();
 
 		if(specialEffect == SpecialEffect.Emprestimo)
@@ -64,7 +66,7 @@ public class EffectCard : Card
 	{
 		if(effectType == EffectType.DescartaCompraCartas && DeckController.CardsInHand - 1 < specialEffectValue)
 		{
-			errmsg = "Você não tem cartas suficientes na mão para descartar";
+			errmsg = Localization.Get("ERR_CARTAS");
 			return false;
 		}
 		if(effectType == EffectType.DestroiConstrucao)
@@ -77,7 +79,7 @@ public class EffectCard : Card
 			}
 
 			if(!hasConstruction)
-				errmsg = "Você não possui nenhuma construção para destruir.";
+				errmsg = Localization.Get("ERR_CONSTRUCAO");
 
 			return hasConstruction;
 		}
@@ -92,7 +94,7 @@ public class EffectCard : Card
 			}
 			
 			if(!hasConstruction)
-				errmsg = "Você não possui nenhuma construção com cooldown maior que 0 para diminuir.";
+				errmsg = Localization.Get("ERR_COOLDOWN");
 			
 			return hasConstruction;
 		}
@@ -118,7 +120,7 @@ public class EffectCard : Card
 			GameController.activeCardEffect = effectType;
 			GameController.effectCardValue = specialEffectValue;
 			TrashCan.OnDiscarded += CardDiscarded;
-			Popup.ShowBlank("Descarte " + GameController.effectCardValue + " cartas");
+			Popup.ShowBlank(string.Format(Localization.Get("DESCARTAR"), GameController.effectCardValue));
 			return;
 		}
 		else if(effectType == EffectType.DestroiConstrucao || effectType == EffectType.DiminuiCooldown)
@@ -133,7 +135,9 @@ public class EffectCard : Card
 
 			return;
 		}
+
 		Discard();
+		GameController.Instance.VerifyEndGame();
 	}
 
 	public void AreaSelected(ConstructionArea cArea)
@@ -155,7 +159,7 @@ public class EffectCard : Card
 	{
 		GameController.effectCardValue--;
 
-		Popup.ShowBlank("Descarte " + GameController.effectCardValue + " carta(s)");
+		Popup.ShowBlank(string.Format(Localization.Get("DESCARTAR"), GameController.effectCardValue));
 
 		if(GameController.effectCardValue == 0)
 		{
@@ -176,28 +180,28 @@ public class EffectCard : Card
 
 		if(effectType == EffectType.MarketingTradicionalForte || effectType == EffectType.IngredientesDeQualidade || 
 		   effectType == EffectType.IngredientesDeAltaQualidade)
-			s = string.Format(description, fameReward, moneyReward, cooldown);
+			s = string.Format(Localization.Get(description), fameReward, moneyReward, cooldown);
 
 		else if(effectType == EffectType.InvestimentoBaixo || effectType == EffectType.InvestimentoAlto ||
 		        effectType == EffectType.UmDiaBom || effectType == EffectType.UmDiaExcelente)
-			s = string.Format(description, moneyReward, cooldown);
+			s = string.Format(Localization.Get(description), moneyReward, cooldown);
 
 		else if(effectType == EffectType.MarketingDigitalFraco || effectType == EffectType.MarketingDigitalForte || 
 		        effectType == EffectType.MarketingTradicionalFraco || effectType == EffectType.SaiuNoJornal)
-			s = string.Format(description, fameReward, cooldown);
+			s = string.Format(Localization.Get(description), fameReward, cooldown);
 
 		else if(effectType == EffectType.EmprestimoBancarioPequeno || effectType == EffectType.EmprestimoBancarioMedio ||
 		        effectType == EffectType.EmprestimoBancarioGrande)
-			s = string.Format(description, specialEffectValue, cooldown, Mathf.Abs(moneyReward));
+			s = string.Format(Localization.Get(description), specialEffectValue, cooldown, Mathf.Abs(moneyReward));
 
 		else if(effectType == EffectType.DescartaCompraCartas)
-			s = string.Format(description, specialEffectValue, specialEffectValue);
+			s = string.Format(Localization.Get(description), specialEffectValue, specialEffectValue);
 
 		else if(effectType == EffectType.CompraCartas || effectType == EffectType.DiminuiCooldown)
-			s = string.Format(description, specialEffectValue);
+			s = string.Format(Localization.Get(description), specialEffectValue);
 
 		else
-			s = description;
+			s = Localization.Get(description);
 
 		return s;
 	}

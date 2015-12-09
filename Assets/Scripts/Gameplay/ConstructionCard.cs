@@ -28,7 +28,9 @@ public class ConstructionCard : Card
 
 	public SpecialEffect specialEffect;
 	public float specialEffectValue;
-	
+
+	public AudioClip sound;
+
 	protected UILabel upkeepLabel;
 
 	#region get / set
@@ -54,7 +56,7 @@ public class ConstructionCard : Card
 		cooldownLabel.text = upkeep.ToString();
 
 		int parameter = (specialEffect == SpecialEffect.ManutencaoCozinha) ? (int)Mathf.Abs (specialEffectValue) : (int)(specialEffectValue * 100);
-		cardDescription.text = string.Format(description, parameter);
+		cardDescription.text = string.Format(Localization.Get(description), parameter);
 
 	}
 

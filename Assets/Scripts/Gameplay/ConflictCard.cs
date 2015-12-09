@@ -61,8 +61,8 @@ public class ConflictCard : MonoBehaviour
 		UITexture cardImage = transform.FindChild("Front").FindChild("Image").GetComponent<UITexture>();
 		UILabel cardDescription = transform.FindChild("Front").FindChild("Description").FindChild("Label").GetComponent<UILabel>();
 
-		cardName.text = nome;
-		cardDescription.text = string.Format(description, Mathf.Abs(specialEffectValue), Mathf.Abs(specialEffectValue2));
+		cardName.text = Localization.Get(nome);
+		cardDescription.text = string.Format(Localization.Get(description), Mathf.Abs(specialEffectValue), Mathf.Abs(specialEffectValue2));
 
 		if(image != null)
 			cardImage.mainTexture = image;
@@ -85,11 +85,13 @@ public class ConflictCard : MonoBehaviour
 
 			case SpecialEffect.Fame:
 				GameController.Fame += (int)specialEffectValue;
+				GameController.Instance.VerifyEndGame();
 			break;
 
 			case SpecialEffect.GoldFame:
 				GameController.Money += (int)specialEffectValue;
 				GameController.Fame += (int)specialEffectValue2;
+				GameController.Instance.VerifyEndGame();
 			break;
 
 			case SpecialEffect.ProfitGold:

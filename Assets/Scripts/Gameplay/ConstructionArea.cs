@@ -28,6 +28,12 @@ public class ConstructionArea : MonoBehaviour
 	private Transform constructionHUD;
 	private Transform hudCard;
 	private UILabel countdown;
+	private AudioSource source;
+
+	[HideInInspector]
+	public int row;
+	[HideInInspector]
+	public int column;
 
 	private bool inactive;
 
@@ -47,6 +53,8 @@ public class ConstructionArea : MonoBehaviour
 		EffectCard.OnWaitingForSelect += ShowClickableAreas;
 		ConstructionArea.OnAreaSelected += AreaSelected;
 
+		GameController.OnGameLoaded += LoadCard;
+
 		spriteArea = GetComponent<SpriteRenderer>();
 		spriteArea.sprite = blankSprite;
 		Color c = spriteArea.color;
@@ -60,6 +68,41 @@ public class ConstructionArea : MonoBehaviour
 		countdown.enabled = false;
 		hudCard.gameObject.SetActive(false);
 		inactive = false;
+
+		source = GetComponent<AudioSource>();
+
+		row = int.Parse(gameObject.name.Substring(gameObject.name.Length - 3, 1));
+		column = int.Parse(gameObject.name.Substring(gameObject.name.Length - 1, 1));
+	}
+
+	private void LoadCard ()
+	{
+		foreach(ConstructionsSaved construction in SaveController.ConstructionsSaved)
+		{
+			if(construction.row == row && construction.column == column)
+			{
+				Debug.Log("Construction Area " + row + "." + column + " has card " + construction.name + " " + construction.level);
+
+				GameObject card = DeckController.Instance.InstantiateCard(DeckController.SearchCard(construction.name, construction.level));
+				card.GetComponent<Card>().canDoTween = false;
+				card.GetComponent<Card>().Depth = 10;
+
+				Construct(card.GetComponent<Card>(), true);
+
+				DiminuiCooldown(constructionCard.cooldown - construction.cooldown);
+
+				spriteArea.color = (IsActive) ? normalColor : inactiveColor;
+				
+				if(spriteArea.sprite == blankSprite)
+				{
+					Color c = spriteArea.color;
+					c.a = 0;
+					spriteArea.color = c;
+				}
+
+				break;
+			}
+		}
 	}
 
 	public void OnCardFlipped()
@@ -114,21 +157,21 @@ public class ConstructionArea : MonoBehaviour
 			if(GameController.CardsPlayedThisTurn >= GameController.MaxCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CARDS!
-				Popup.ShowOk(string.Format("Played {0} / {1} cards. Can't play more cards", GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
+				Popup.ShowOk(string.Format(Localization.Get("LIMITE_CARTAS"), GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
 			}
 			else if(GameController.ConstructionCardsPlayedThisTurn >= GameController.MaxConstructionCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CONSTRUCTION CARDS!
-				Popup.ShowOk(string.Format("Played {0} / {1} construction cards. Can't play more cards", GameController.ConstructionCardsPlayedThisTurn, GameController.MaxConstructionCardsPerTurn));
+				Popup.ShowOk(string.Format(Localization.Get("LIMITE_CONSTRUCAO"), GameController.ConstructionCardsPlayedThisTurn, GameController.MaxConstructionCardsPerTurn));
 			}
 			else if(GameController.Fame < card.minFame)
 			{
 				//TODO: feedback NO FAME!
-				Popup.ShowOk(string.Format("Não tem fama suficiente. ({0} / {1}) ", GameController.Fame, card.minFame));
+				Popup.ShowOk(string.Format(Localization.Get("SEM_FAMA"), GameController.Fame, card.minFame));
 			}
 			else if(constructionCard != null && constructionCard.cooldown > 0)
 			{
-				Popup.ShowOk (string.Format("Você já tem uma construção em andamento nesse lugar.", constructionCard.cooldown));
+				Popup.ShowOk (string.Format(Localization.Get("JA_CONSTRUINDO"), constructionCard.cooldown));
 			}
 			/*else if(GameController.Money < card.cost)
 			{
@@ -139,35 +182,16 @@ public class ConstructionArea : MonoBehaviour
 			{
 				Debug.Log("Construct!");
 
-				if(constructionCard != null)
-					Discard();
+				Construct(card);
 
-				//added card to gameplay
-				constructionCard = card as ConstructionCard;
-				card.transform.parent = hudCard;
-				card.transform.localPosition = Vector3.zero;
-				card.transform.localScale = Vector3.one;
-				card.GetComponent<Collider>().enabled = false;
-				card.transform.FindChild("Front").localPosition = Vector3.zero;
-				card.transform.FindChild("Back").localPosition = Vector3.zero;
-				card.placed = true;
-
-				//inactivate blank card
-				hudCard.FindChild("Blank").gameObject.SetActive(false);
-
-				//change sprite and activate cooldown
-				spriteArea.sprite = constructionSprite;
-				countdown.enabled = true;
-				countdown.text = constructionCard.cooldown.ToString();
-
-				VerifyActiveConflict();
-
-				GameController.OnWeekChanged += DecreaseCooldown;
-
-				if(OnConstructed != null)
-					OnConstructed(card);
-
-				GameController.Money -= card.cost;
+				spriteArea.color = (IsActive) ? normalColor : inactiveColor;
+				
+				if(spriteArea.sprite == blankSprite)
+				{
+					Color c = spriteArea.color;
+					c.a = 0;
+					spriteArea.color = c;
+				}
 			}
 		}
 
@@ -179,7 +203,51 @@ public class ConstructionArea : MonoBehaviour
 			c.a = 0;
 			spriteArea.color = c;
 		}
+	}
 
+	private void Construct(Card card)
+	{
+		Construct(card, false);
+	}
+
+	private void Construct(Card card, bool fromLoad)
+	{
+		if(constructionCard != null)
+			Discard();
+		
+		//added card to gameplay
+		constructionCard = card as ConstructionCard;
+		card.transform.parent = hudCard;
+		card.transform.localPosition = Vector3.zero;
+		card.transform.localScale = Vector3.one;
+		card.GetComponent<Collider>().enabled = false;
+		card.transform.FindChild("Front").localPosition = Vector3.zero;
+		card.transform.FindChild("Back").localPosition = Vector3.zero;
+		card.placed = true;
+		
+		source.clip = constructionCard.sound;
+		
+		//inactivate blank card
+		hudCard.FindChild("Blank").gameObject.SetActive(false);
+		
+		//change sprite and activate cooldown
+		spriteArea.sprite = constructionSprite;
+		countdown.enabled = true;
+		countdown.text = constructionCard.cooldown.ToString();
+		
+		VerifyActiveConflict();
+		
+		GameController.OnWeekChanged += DecreaseCooldown;
+		
+		if(OnConstructed != null)
+			OnConstructed(card);
+
+		if(!fromLoad)
+		{
+			GameController.Money -= card.cost;
+
+			SoundController.PlaySoundFX(SoundController.SoundFX.Construct);
+		}
 	}
 
 	private void VerifyActiveConflict()
@@ -229,6 +297,7 @@ public class ConstructionArea : MonoBehaviour
 			OnDiscarded(constructionCard);
 		
 		constructionCard = null;
+		source.clip = null;
 
 		spriteArea.sprite = blankSprite;
 		Color c = spriteArea.color;
@@ -346,7 +415,12 @@ public class ConstructionArea : MonoBehaviour
 		}
 
 		if(constructionCard != null && (spriteArea.color == normalColor || spriteArea.color == inactiveColor))
+		{
 			hudCard.gameObject.SetActive(true);
+
+			if(!source.isPlaying)
+				source.Play();
+		}
 	}
 
 	void OnMouseExit() 
@@ -361,7 +435,10 @@ public class ConstructionArea : MonoBehaviour
 		}
 
 		if(constructionCard != null && (spriteArea.color == normalColor || spriteArea.color == inactiveColor))
+		{
 			hudCard.gameObject.SetActive(false);
+			source.Stop();
+		}
 	}
 
 	void OnMouseDown()

@@ -17,9 +17,11 @@ public class EffectArea : MonoBehaviour
 
 	public EffectCard effectCard;
 
-	private UI2DSprite spriteArea;
+	private UISprite spriteArea;
 	private Transform hudCard;
 	private UILabel countdown;
+
+	public int position;
 
 	// Use this for initialization
 	void Start () 
@@ -31,10 +33,38 @@ public class EffectArea : MonoBehaviour
 		EffectCard.OnWaitingForSelect += ShowClickableAreas;
 		ConstructionArea.OnAreaSelected += AreaSelected;
 
-		spriteArea = transform.FindChild("Sprite").GetComponent<UI2DSprite>();
+		GameController.OnGameLoaded += LoadCard;
+
+		spriteArea = transform.FindChild("Sprite").GetComponent<UISprite>();
 		hudCard = transform;//GameObject.Find(gameObject.name.Replace("Area", "HUD")).transform;
 		countdown = hudCard.FindChild("Countdown").GetComponentInChildren<UILabel>();
 		countdown.enabled = false;
+
+		position = int.Parse(gameObject.name.Substring(gameObject.name.Length - 1, 1));
+
+		spriteArea.color = normalColor;
+	}
+
+	private void LoadCard ()
+	{
+		foreach(EffectSaved effect in SaveController.EffectsSaved)
+		{
+			if(effect.position == position)
+			{
+				Debug.Log("Effect Area " + effect + " has card " + effect.name);
+				
+				GameObject card = DeckController.Instance.InstantiateCard(DeckController.SearchCard(effect.name));
+				card.GetComponent<Card>().canDoTween = false;
+				card.GetComponent<Card>().Depth = 10;
+				ActiveEffect(card.GetComponent<Card>(), true);
+				
+				DiminuiCooldown(effectCard.cooldown - effect.cooldown);
+
+				spriteArea.color = normalColor;
+
+				break;
+			}
+		}
 	}
 
 	private void CardDragged(Card card)
@@ -66,17 +96,17 @@ public class EffectArea : MonoBehaviour
 			if(GameController.CardsPlayedThisTurn >= GameController.MaxCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CARDS!
-				Popup.ShowOk(string.Format("Played {0} / {1} cards. Can't play more cards", GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
+				Popup.ShowOk(string.Format(Localization.Get("LIMITE_CARTAS"), GameController.CardsPlayedThisTurn, GameController.MaxCardsPerTurn));
 			}
 			else if(GameController.EffectCardsPlayedThisTurn >= GameController.MaxEffectCardsPerTurn)
 			{
 				//TODO: feedback NO MORE CONSTRUCTION CARDS!
-				Popup.ShowOk(string.Format("Played {0} / {1} effect cards. Can't play more cards", GameController.EffectCardsPlayedThisTurn, GameController.MaxEffectCardsPerTurn));
+				Popup.ShowOk(string.Format(Localization.Get("LIMITE_EFEITO"), GameController.EffectCardsPlayedThisTurn, GameController.MaxEffectCardsPerTurn));
 			}
 			else if(GameController.Fame < card.minFame)
 			{
 				//TODO: feedback NO FAME!
-				Popup.ShowOk(string.Format("Não tem fama suficiente. ({0} / {1}) ", GameController.Fame, card.minFame));
+				Popup.ShowOk(string.Format(Localization.Get("SEM_FAMA"), GameController.Fame, card.minFame));
 			}
 			
 			/*else if(GameController.Money < card.cost && card.cost != 0)
@@ -93,43 +123,63 @@ public class EffectArea : MonoBehaviour
 			{
 				Debug.Log("New Effect!");
 				
-				//added card to gameplay
-				effectCard = card as EffectCard;
-				card.transform.parent = hudCard.FindChild("Card");
-				card.transform.localPosition = Vector3.zero;
-				card.transform.localScale = Vector3.one;
-				card.GetComponent<Collider>().enabled = false;
-				card.transform.FindChild("Front").localPosition = Vector3.zero;
-				card.transform.FindChild("Back").localPosition = Vector3.zero;
-				card.placed = true;
-
-				//change sprite and activate cooldown
-				countdown.enabled = true;
-				countdown.text = effectCard.cooldown.ToString();
-				
-				GameController.OnWeekChanged += DecreaseCooldown;
-
-				effectCard.OnPlayed();
-
-				if(OnPlayed != null)
-					OnPlayed(card);
-				
-				GameController.Money -= card.cost;
-
-				if(effectCard.cooldown == 0)
-					UnlockEffect();
+				ActiveEffect(card);
 			}
 		}
 
 		spriteArea.color = normalColor;
 	}
-	
+
+	public void DiminuiCooldown(int value)
+	{
+		while(value > 0)
+		{
+			DecreaseCooldown();
+			value--;
+		}
+	}
+
 	private void DecreaseCooldown()
 	{
 		effectCard.cooldown--;
 		countdown.text = effectCard.cooldown.ToString();
 		
 		if(effectCard.cooldown <= 0)
+			UnlockEffect();
+	}
+
+	private void ActiveEffect(Card card)
+	{
+		ActiveEffect(card, false);
+	}
+
+	private void ActiveEffect(Card card, bool fromLoad)
+	{
+		//added card to gameplay
+		effectCard = card as EffectCard;
+		card.transform.parent = hudCard.FindChild("Card");
+		card.transform.localPosition = Vector3.zero;
+		card.transform.localScale = Vector3.one;
+		card.GetComponent<Collider>().enabled = false;
+		card.transform.FindChild("Front").localPosition = Vector3.zero;
+		card.transform.FindChild("Back").localPosition = Vector3.zero;
+		card.placed = true;
+		
+		//change sprite and activate cooldown
+		countdown.enabled = true;
+		countdown.text = effectCard.cooldown.ToString();
+		
+		GameController.OnWeekChanged += DecreaseCooldown;
+		
+		effectCard.OnPlayed();
+		
+		if(OnPlayed != null)
+			OnPlayed(card);
+
+		if(!fromLoad)
+			GameController.Money -= card.cost;
+		
+		if(effectCard.cooldown == 0)
 			UnlockEffect();
 	}
 

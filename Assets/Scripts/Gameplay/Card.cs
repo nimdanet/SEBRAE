@@ -13,13 +13,16 @@ public class Card : MonoBehaviour
 	public string description;
 	public Texture2D image;
 
-	protected Type cardType;
+	[HideInInspector]
+	public Type cardType;
 	public int cost;
 	public int minFame;
 	public int moneyReward;
 	public int fameReward;
 	public int cooldown;
 	private int fullCooldown;
+	[HideInInspector]
+	public bool canDoTween = true;
 
 	[HideInInspector]
 	public GameCard originalCard;
@@ -80,6 +83,8 @@ public class Card : MonoBehaviour
 		HUDController.OnPassWeek -= LockInteraction;
 		HowToPlay.OnOpen -= LockInteraction;
 		HowToPlay.OnClose -= UnlockInteraction;
+		Options.OnOpen -= LockInteraction;
+		Options.OnClose -= UnlockInteraction;
 	}
 
 	protected virtual void Start()
@@ -93,6 +98,8 @@ public class Card : MonoBehaviour
 		HUDController.OnPassWeek += LockInteraction;
 		HowToPlay.OnOpen += LockInteraction;
 		HowToPlay.OnClose += UnlockInteraction;
+		Options.OnOpen += LockInteraction;
+		Options.OnClose += UnlockInteraction;
 
 		tweenPosition = GetComponent<TweenPosition>();
 		tweenScale = GetComponent<TweenScale>();
@@ -107,10 +114,9 @@ public class Card : MonoBehaviour
 		costFameLabel = transform.FindChild("Front").FindChild("Cost").FindChild("fame").GetComponent<UILabel>();
 		cooldownLabel = transform.FindChild("Front").FindChild("Cooldown").FindChild("Label").GetComponent<UILabel>();
 
-		cardName.text = nome;
-		cardDescription.text = description;
-		if(image != null)
-			cardImage.mainTexture = image;
+		cardName.text = Localization.Get(nome);
+		cardDescription.text = Localization.Get(description);
+		cardImage.mainTexture = image;
 		rewardMoneyLabel.text = moneyReward.ToString();
 		rewardFameLabel.text = fameReward.ToString();
 		costMoneyLabel.text = cost.ToString();
@@ -122,7 +128,8 @@ public class Card : MonoBehaviour
 
 		fullCooldown = cooldown;
 
-		StartCoroutine(DoTween());
+		if(canDoTween)
+			StartCoroutine(DoTween());
 	}
 
 	private IEnumerator DoTween()

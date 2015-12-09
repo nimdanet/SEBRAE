@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 public class HUDController : MonoBehaviour 
 {
@@ -16,7 +17,10 @@ public class HUDController : MonoBehaviour
 	public UILabel profitLabel;
 	public UILabel fameProfitLabel;
 
-	public TweenRotation pointer;
+	public UILabel proximoMesLabel;
+	public UILabel currentMesLabel;
+	public Transform pagina;
+	private List<UISprite> weeks;
 
 	public GameObject conflictDeck;
 
@@ -28,11 +32,22 @@ public class HUDController : MonoBehaviour
 		{
 			if(instance == null)
 				instance = GameObject.FindObjectOfType<HUDController>();
-			
+	
 			return instance;
 		}
 	}
 	#endregion
+
+	void OnDestroy()
+	{
+		GameController.OnFameChanged -= FameUpdated;
+		GameController.OnMoneyChanged -= MoneyUpdated;
+		GameController.OnUpkeepChanged -= UpkeepUpdated;
+		GameController.OnMoneyProfitChanged -= MoneyProfitUpdated;
+		GameController.OnFameProfitChanged -= FameProfitUpdated;
+		
+		GameController.OnGameLoaded -= GameLoaded;
+	}
 
 	void Awake()
 	{
@@ -41,11 +56,38 @@ public class HUDController : MonoBehaviour
 		GameController.OnUpkeepChanged += UpkeepUpdated;
 		GameController.OnMoneyProfitChanged += MoneyProfitUpdated;
 		GameController.OnFameProfitChanged += FameProfitUpdated;
+
+		GameController.OnGameLoaded += GameLoaded;
+
+		weeks = new List<UISprite>();
+		for(int i = 1; i <= 4; i++)
+		{
+			UISprite week = pagina.FindChild("semana" + i).GetComponent<UISprite>();
+			week.fillAmount = 0;
+			weeks.Add(week);
+		}
 	}
 
 	void Start()
 	{
+		proximoMesLabel.text = Localization.Get("MES_CALENDARIO") + " " + (GameController.Month + 1);
+		currentMesLabel.text = Localization.Get("MES_CALENDARIO") + " " + GameController.Month;
+
 		conflictDeck.SetActive(false);
+	}
+
+	private void GameLoaded()
+	{
+		proximoMesLabel.text = Localization.Get("MES_CALENDARIO") + " " + (GameController.Month + 1);
+		currentMesLabel.text = Localization.Get("MES_CALENDARIO") + " " + GameController.Month;
+
+		Debug.Log(GameController.Week);
+		for(int i = 0; i < weeks.Count; i++)
+		{
+			UISprite w = weeks[i];
+			Debug.Log(i < (GameController.Week - 1));
+			w.fillAmount = (i < GameController.Week - 1) ? 1 : 0;
+		}
 	}
 
 	private void FameUpdated()
@@ -78,7 +120,7 @@ public class HUDController : MonoBehaviour
 	{
 		if(DeckController.CardsInHand > GameController.MaxCardsInHand)
 		{
-			Popup.ShowOk(string.Format("Muitas cartas na mão (limite: {0})", GameController.MaxCardsInHand));
+			Popup.ShowOk(string.Format(Localization.Get("LIMITE_MAO"), GameController.MaxCardsInHand));
 			return;
 		}
 
@@ -88,15 +130,41 @@ public class HUDController : MonoBehaviour
 		if(Popup.IsActive || ConflictCard.IsActive)
 			return;
 
-		pointer.ResetToBeginning();
-
-		pointer.from = new Vector3(0, 0, 90 - (90f * (GameController.Week - 1f)));
-		pointer.to = new Vector3(0, 0, 90 - (90f * (GameController.Week - 0f)));
-
-		pointer.PlayForward();
+		StartCoroutine(RiskWeek());
 
 		if(OnPassWeek != null)
 			OnPassWeek();
+	}
+
+	public IEnumerator RiskWeek()
+	{
+		UISprite week = weeks[GameController.Week - 1];
+
+		while(week.fillAmount < 1)
+		{
+			week.fillAmount += Time.deltaTime;
+			yield return null;
+		}
+
+		GameController.Instance.NextWeek();
+
+		if(GameController.Week > 4)
+		{
+			GameController.Instance.NextMonth();
+
+			TweenPosition tween = pagina.GetComponent<TweenPosition>();
+			tween.ResetToBeginning();
+			tween.PlayForward();
+
+			yield return new WaitForSeconds(tween.duration);
+
+			foreach(UISprite w in weeks)
+				w.fillAmount = 0;
+
+			pagina.transform.localPosition = tween.from;
+			currentMesLabel.text = Localization.Get("MES_CALENDARIO") + " " + (GameController.Month - 0);
+			proximoMesLabel.text = Localization.Get("MES_CALENDARIO") + " " + (GameController.Month + 1);
+		}
 	}
 
 	public void ShowConflictCard()
@@ -107,5 +175,15 @@ public class HUDController : MonoBehaviour
 	public void HideConflictCard()
 	{
 		conflictDeck.SetActive(false);
+	}
+
+	public void Save()
+	{
+		SaveController.Save();
+	}
+
+	public void Load()
+	{
+		SaveController.Load();
 	}
 }

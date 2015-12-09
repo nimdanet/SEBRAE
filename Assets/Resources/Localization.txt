@@ -1,0 +1,100 @@
+KEY,Portuguese
+NOME,Nome
+EMAIL,Email
+LOGIN,Login
+JOGAR,Jogar
+CONTINUAR,Continuar
+PREENCHER_NOME,Favor preencher o nome antes de jogar
+PREENCHER_EMAIL,Favor preencher o e-mail antes de jogar
+CARREGANDO,Carregando
+CARREGADO,Carregado
+PROXIMA_SEMANA,Próxima Semana
+CARTAS_EFEITO,CARTAS DE EFEITO
+SEMANA,semana
+MES,mês
+MES_CALENDARIO,Mês
+COMO_JOGAR,COMO JOGAR
+OPCOES,OPÇÕES
+SALVAR,SALVAR JOGO
+SAIR,SAIR
+GAME_OVER,Fim De Jogo! \n Seu restaurante perdeu muito prestígio e se tornou insustentável.
+WINNER,Sucesso! \n Seu restaurante foi avaliado em 5 estrelas em {1} meses! Parabéns!
+LIMITE_MAO,Você possui muitas cartas na mão. \n Limite de {0} cartas. Descarte arrastando as cartas para o lixo.
+LIMITE_CARTAS,Você já jogou {0} carta(s) essa semana de um limite de {1}. Não pode jogar mais.
+LIMITE_CONSTRUCAO,Você já jogou {0} carta(s) de construção essa semana de um limite de {1}. Não pode jogar mais.
+LIMITE_EFEITO,Você já jogou {0} carta(s) de efeito essa semana de um limite de {1}. Não pode jogar mais.
+SEM_FAMA,Você precisa de {0} fama para construir e possui apenas {1}.
+JA_CONSTRUINDO,Você já possui uma construção em andamento nesse lugar. Espere terminar para construir outra.
+DESCARTAR,Descarte {0} carta(s)
+SALVO,Jogo salvo com sucesso
+ERR_CARTAS,Você não tem cartas suficientes na mão para descartar
+ERR_CONSTRUCAO,Você não possui nenhuma construção para destruir
+ERR_COOLDOWN,Você não possui nenhuma construção com cooldown maior que 0 para diminuir.
+COZINHA,Cozinha
+SALAO,Salao
+LOBBY,Lobby
+DISPENSA,Dispensa
+DISPENSA_EFFECT,Diminui {0} no custo de manutenção da cozinha
+ADMINISTRATIVO,Administrativo
+ADMINISTRATIVO_EFFECT,Aumenta {0}% no seu lucro mensal
+BANHEIRO,Banheiro
+BANHEIRO_EFFECT,Aumenta {0}% na sua fama mensal
+INVEST_BAIXO,Investimento Baixo
+INVEST_ALTO,Investimento Alto
+INVEST_EFFECT,Jogador ganha {0} moedas após {1} semanas
+MARK_DIG_FRACO,Marketing Digital Fraco
+MARK_DIG_FORTE,Marketing Digital Forte
+MARK_TRAD_FRACO,Marketing Tradicional Fraco
+MARK_TRAD_FORTE,Marketing Tradicional Forte
+MARK_EFFECT,Jogador ganha {0} de fama após {1} turnos
+INGRED_QUAL,Ingredientes de Qualidade
+INGRED_QUAL_ALTA,Ingreditente
+INGRED_EFFECT,Jogador ganha {0} de fama e {1} moedas após {2} turnos
+UM_DIA_BOM,Um Dia Bom!
+UM_DIA_EXCELENTE,Um Dia Excelente!
+UM_DIA_EFFECT,Ganhe {0} moedas automaticamente
+SAIU_JORNAL,Saiu no Jornal,
+JORNAL_EFFECT,Ganhe {0} de fama automaticamente
+EMPREST_PEQ,Empréstimo Bancário Pequeno
+EMPREST_MED,Empréstimo Bancário Médio
+EMPREST_GRD,Empréstimo Bancário Grande
+EMPREST_EFFECT,"Ganha {0} moedas. Depois de {1} semanas, pague {2} moedas."
+BOM_GERENCIAMENTO,Bom Gerenciamento
+BOM_GERENC_EFFECT,Compre {0} cartas
+REPENSAR_REC_1,Repensar Recursos 1
+REPENSAR_REC_2,Repensar Recursos 2
+REPENSAR_EFFECT,Descarte {0} cartas e compre {1} cartas
+APRESSAR,Apressar Construção
+APRESSAR_EFFECT,Diminua o cooldown em {0} de uma construção
+REFORMA,Reforma na Casa
+REFORMA_EFFECT,Destrua uma construção
+ENERGIA,Falta de Energia
+ENERGIA_EFFECT,Ganhe metade fama no próximo mês
+DEMISSAO,Demissão
+DEMISSAO_EFFECT,Perde efeito de salões pelo próximo mês
+SANITARIA,Vigilância Sanitária
+SANITARIA_EFFECT,Perde efeito de cozinhas pelo próximo mês
+CRISE,Crise Econômica
+CRISE_EFFECT,Perde efeito de Administrativo e Banheiros pelo próximo mês
+ESCASSEZ,Escassez de Produtos
+ESCASSEZ_EFFECT,Perde efeito de Dispensas e Lobby pelo próximo mês
+CRIME,Crime
+CRIME_EFFECT,Perde {0} moedas e {1} de fama.
+GREVE,Greve de Funcionários
+GREVE_EFFECT,Descarta toda a sua mão
+CHEQUE,Cheques sem fundo
+CHEQUE_EFFECT,Ganha metade de sua recompensa de moedas no próximo mês
+INCENDIO,Incêndio
+INCENDIO_EFFECT,Sacrifica {0} construção
+ESTRUTURAL,Problema Estrutural
+ESTRUTURAL_EFFECT,Volta cooldown completo de {0} construção
+GORGETAS,Boas Gorgetas!
+GORGETAS_EFFECT,Ganha {0} moedas
+FAMOSOS,Visita de famosos
+FAMOSOS_EFFECT,Ganha {0} fama
+EMPREENDEDOR,Empreendedor mestre!
+EMPREENDEDOR_EFFECT,Complete sua mão com o máximo de cartas
+RECOMPENSA,Recompensas em dobro
+RECOMPENSA_EFFECT,Ganhe o dobro de recompensas no próximo mês
+EFICIENCIA,Eficiência na construção
+EFICIENCIA_EFFECT,Zere todos os cooldowns de construções

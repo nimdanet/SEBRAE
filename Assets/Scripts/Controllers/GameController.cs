@@ -13,6 +13,8 @@ public class GameController : MonoBehaviour
 
 	public static event Action OnWeekChanged;
 	public static event Action OnMonthChanged;
+
+	public static event Action OnGameLoaded;
 	#endregion
 
 	public int initialMoney;
@@ -54,14 +56,21 @@ public class GameController : MonoBehaviour
 	#endregion
 
 	private bool gameStarted;
-	private bool alreadyWon;
+	[HideInInspector]
+	public static bool alreadyWon;
 
 	private ConstructionArea[] constructionAreas;
+	private EffectArea[] effectAreas;
 
 	#region get / set
 	public static ConstructionArea[] ConstructionAreas
 	{
 		get { return Instance.constructionAreas; }
+	}
+
+	public static EffectArea[] EffectAreas
+	{
+		get { return Instance.effectAreas; }
 	}
 
 	public static int Money
@@ -267,6 +276,7 @@ public class GameController : MonoBehaviour
 		ConflictCard.OnActive += NewConflict;
 
 		constructionAreas = GameObject.FindObjectsOfType<ConstructionArea>();
+		effectAreas = GameObject.FindObjectsOfType<EffectArea>();
 
 		Money = initialMoney;
 		Fame = initialFame;
@@ -282,9 +292,35 @@ public class GameController : MonoBehaviour
 		moneyMultiplier = 1;
 		fameMultiplier = 1;
 
-		yield return new WaitForSeconds(0.5f);
+		SoundController.PlayMusic(SoundController.Music.Game);
 
-		HowToPlay.Instance.Open();
+		if(SaveController.loadFromSave)
+			LoadGame();
+		else
+		{
+			yield return new WaitForSeconds(0.5f);
+			HowToPlay.Instance.Open();
+		}
+	}
+
+	public void LoadGame()
+	{
+		Money = SaveController.Money;
+		Fame = SaveController.Fame;
+		Upkeep = SaveController.Upkeep;
+		FameProfit = SaveController.FameReward;
+		MoneyProfit = SaveController.MoneyReward;
+		Week = SaveController.Week;
+		Month = SaveController.Month;
+		activeConflictEffect = SaveController.ActiveConflictEffect;
+		moneyMultiplier = SaveController.MoneyMultiplier;
+		fameMultiplier = SaveController.FameMultiplier;
+		alreadyWon = SaveController.HasWon;
+
+		if(OnGameLoaded != null)
+			OnGameLoaded();
+
+		gameStarted = true;
 	}
 
 	public void StartGame()
@@ -301,30 +337,21 @@ public class GameController : MonoBehaviour
 		constructionCardsPlayedThisTurn = 0;
 		effectCardsPlayedThisTurn = 0;
 
-		if(Week < 4)
-		{
-			Week++;
-			DeckController.Instance.DrawCards(cardsToDrawPerWeek);
-		}
-		else
-		{
-			Week = 1;
-			NextMonth();
-		}
-
 		Fame -= FameDecrease;
 
-		VerifyEndGame();
+		if(Week < 4)
+		{
+			DeckController.Instance.DrawCards(cardsToDrawPerWeek);
+			VerifyEndGame();
+		}
 
-		if(Week == 1)
-			ShowConflictCard();
-
+		Week++;
 		Debug.Log(string.Format("Passed to Week {0}", Week));
 	}
 
 	public void NextMonth()
 	{
-		Debug.Log(string.Format("Passed to Month {0}", Month));
+		currentWeek = 1;
 
 		Money += MoneyProfit;
 		Fame += FameProfit;
@@ -335,24 +362,29 @@ public class GameController : MonoBehaviour
 		
 		UpdateParameters();
 
-		//DeckController.Instance.DrawCards(cardsToDrawPerMonth);
-
 		Month++;
+
+		Debug.Log(string.Format("Passed to Month {0}", Month));
 	}
 
-	private void VerifyEndGame()
+	public void VerifyEndGame()
 	{
 		if(Fame <= MinFame)
-			Popup.ShowBlank("GAME OVER");
+			Popup.ShowOk(Localization.Get("GAME_OVER"), BackToMenu);
 
 		if(Fame >= MaxFame && !alreadyWon)
 		{
 			alreadyWon = true;
-			Popup.ShowOk("Winner, don't do drugs!!!");
+			Popup.ShowOk(string.Format(Localization.Get("WINNER"), GameController.Month));
 		}
 	}
 
-	private void ShowConflictCard()
+	private void BackToMenu()
+	{
+		Application.LoadLevel("Login");
+	}
+
+	public void ShowConflictCard()
 	{
 		DeckController.Instance.ShowConflictCard();
 		HUDController.Instance.ShowConflictCard();
